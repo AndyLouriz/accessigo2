@@ -1,0 +1,6 @@
+{
+  "name": "AccessiGo",
+  "description": "A Web-Based Accessible Route Planning System with AI Voice Guidance for Persons with Disabilities (PWDs) in Barangay Sta. Rita, Olongapo City.",
+  "requestFramePermissions": ["geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
