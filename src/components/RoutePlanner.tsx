@@ -540,7 +540,14 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
             }`}
           >
             <Compass className={`w-8 h-8 ${validationError ? '' : 'animate-spin-slow'}`} />
-            <span>{validationError ? 'LOCATION OUTSIDE SERVICE AREA' : 'FIND ACCESSIBLE ROUTE'}</span>
+            <span>
+              {!validationError
+                ? 'FIND ACCESSIBLE ROUTE'
+                : validationError.toLowerCase().includes('same location')
+                  ? 'SAME LOCATION SELECTED'
+                  : 'LOCATION OUTSIDE SERVICE AREA'
+              }
+            </span>
             <ArrowRight className="w-7 h-7" />
           </button>
         </div>

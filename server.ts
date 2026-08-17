@@ -745,7 +745,7 @@ Rules for response:
 `;
 
       const response = await aiClient.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.0-flash",
         contents: userQuery || `Provide accessible navigation instructions for going from ${currentLocation || 'Barangay Hall'} to ${destination || 'Health Station'} in Barangay Sta. Rita.`,
         config: {
           systemInstruction,

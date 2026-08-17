@@ -81,15 +81,18 @@ export const LiveVoiceNavigation: React.FC<LiveVoiceNavigationProps> = ({ active
 
   const currentStep = steps[currentStepIndex] || steps[0];
 
-  // Speak step when step index changes
+  // Speak step instruction when step index changes or pause state changes
   useEffect(() => {
     if (!isNavPaused) {
-      const textToSpeak = settings.language === 'fil' 
-        ? currentStep.instructionTagalog 
+      const textToSpeak = settings.language === 'fil'
+        ? currentStep.instructionTagalog
         : currentStep.instruction;
       speak(textToSpeak);
     }
-  }, [currentStepIndex, isNavPaused]);
+    // NOTE: 'speak' is intentionally omitted from deps — it's stable from context
+    // and re-registering on every context render would cause infinite loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStepIndex, isNavPaused, settings.language]);
 
   const handleNextStep = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -114,12 +117,15 @@ export const LiveVoiceNavigation: React.FC<LiveVoiceNavigationProps> = ({ active
 
   const togglePause = () => {
     if (isNavPaused) {
+      // Resume: first update state, then speak the confirmation
       setIsNavPaused(false);
       speak('Resuming voice guidance navigation.');
     } else {
-      setIsNavPaused(true);
+      // Pause: stop any current speech FIRST, then announce pause
       stopSpeaking();
-      speak('Voice guidance paused.');
+      setIsNavPaused(true);
+      // Use a tiny delay so stopSpeaking clears the queue before new utterance
+      setTimeout(() => speak('Voice guidance paused.'), 100);
     }
   };
 
@@ -314,7 +320,12 @@ export const LiveVoiceNavigation: React.FC<LiveVoiceNavigationProps> = ({ active
             onClick={() => {
               const nextEnabled = !settings.voiceGuidanceEnabled;
               updateSettings({ voiceGuidanceEnabled: nextEnabled });
-              if (!nextEnabled) stopSpeaking();
+              if (!nextEnabled) {
+                stopSpeaking();
+              } else {
+                // Use a short delay to let the state update propagate before speaking
+                setTimeout(() => speak('Voice guidance enabled.'), 150);
+              }
             }}
             className={`p-4 rounded-2xl border-2 font-extrabold flex flex-col items-center justify-center gap-2 transition-all focus:ring-4 focus:ring-blue-300 focus:outline-none ${
               !settings.voiceGuidanceEnabled

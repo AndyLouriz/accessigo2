@@ -37,7 +37,10 @@ export const SavedRoutesPage: React.FC<SavedRoutesPageProps> = ({
   const { speak } = useAccessibility();
 
   const [activeTab, setActiveTab] = useState<'locations' | 'routes'>('locations');
-  
+  const [isLoadingRoute, setIsLoadingRoute] = useState<boolean>(false);
+  const [loadingRouteId, setLoadingRouteId] = useState<string | null>(null);
+
+
   // Saved Locations state
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -518,11 +521,45 @@ export const SavedRoutesPage: React.FC<SavedRoutesPageProps> = ({
                   {/* Action Buttons */}
                   <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
                     <button
-                      onClick={() => {
-                        speak(`Launching voice guidance for ${saved.name}.`);
-                        onStartRoute(SAMPLE_ROUTE_OPTIONS[0]);
+                      onClick={async () => {
+                        speak(`Calculating route for ${saved.name}.`);
+                        setIsLoadingRoute(true);
+                        setLoadingRouteId(saved.id);
+                        try {
+                          const response = await fetch('/api/routes/calculate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              origin: saved.originName,
+                              destination: saved.destinationName,
+                              preferences: saved.preferencesUsed || []
+                            })
+                          });
+                          if (response.ok) {
+                            const data = await response.json();
+                            const route = data.routes?.[0] || SAMPLE_ROUTE_OPTIONS[0];
+                            speak(`Launching voice guidance for ${saved.name}.`);
+                            onStartRoute(route);
+                          } else {
+                            // Fallback to sample route with correct metadata
+                            const fallback = {
+                              ...SAMPLE_ROUTE_OPTIONS[0],
+                              title: saved.name,
+                            };
+                            speak(`Launching voice guidance for ${saved.name}.`);
+                            onStartRoute(fallback);
+                          }
+                        } catch {
+                          speak(`Launching voice guidance for ${saved.name}.`);
+                          onStartRoute(SAMPLE_ROUTE_OPTIONS[0]);
+                        } finally {
+                          setIsLoadingRoute(false);
+                          setLoadingRouteId(null);
+                        }
                       }}
-                      className="px-6 py-3 bg-[#1E3A8A] hover:bg-blue-900 text-white font-extrabold rounded-2xl flex items-center gap-2 text-sm transition-colors cursor-pointer"
+                      disabled={isLoadingRoute && loadingRouteId === saved.id}
+                      aria-label={`Start voice navigation for ${saved.name}: from ${saved.originName} to ${saved.destinationName}`}
+                      className="px-6 py-3 bg-[#1E3A8A] hover:bg-blue-900 text-white font-extrabold rounded-2xl flex items-center gap-2 text-sm transition-colors cursor-pointer disabled:opacity-60"
                     >
                       <Play className="w-5 h-5 fill-current" />
                       <span>START VOICE NAVIGATION</span>

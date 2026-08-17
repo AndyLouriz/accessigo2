@@ -10,7 +10,7 @@ export const VoiceCaptionBanner: React.FC = () => {
   return (
     <div 
       aria-label="Voice guidance captions"
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-xl z-50 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-2 border-blue-400 flex items-center gap-4 animate-slide-up"
+      className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:max-w-xl z-50 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border-2 border-blue-400 flex items-center gap-4 animate-slide-up"
     >
       <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse">
         <Volume2 className="w-6 h-6 text-white" />

@@ -97,35 +97,41 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ onSelectLocation
   const [isOutsideServiceArea, setIsOutsideServiceArea] = useState<boolean>(false);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
-  // Watch User Live Location
+  // Use a ref to track boundary status inside the GPS callback to avoid
+  // re-registering the watcher every time the boundary state changes.
+  const isOutsideServiceAreaRef = useRef<boolean>(false);
+
+  // Watch User Live Location — registered once, uses ref for boundary tracking
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      const watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-          const accuracy = pos.coords.accuracy;
-          setGpsAccuracy(Math.round(accuracy));
-          setUserLocation(coords);
+    if (!('geolocation' in navigator)) return;
 
-          // Check if user is inside Barangay Santa Rita boundary
-          const inside = isPointInStaRita(coords[0], coords[1]);
-          if (!inside && !isOutsideServiceArea) {
-            setIsOutsideServiceArea(true);
-            speak("You have left the AccessiGo service area.");
-          } else if (inside && isOutsideServiceArea) {
-            setIsOutsideServiceArea(false);
-            speak("Welcome back inside Barangay Santa Rita service area.");
-          }
-        },
-        (err) => {
-          console.warn("GPS tracking warning:", err);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-      );
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        setGpsAccuracy(Math.round(pos.coords.accuracy));
+        setUserLocation(coords);
 
-      return () => navigator.geolocation.clearWatch(watchId);
-    }
-  }, [isOutsideServiceArea]);
+        // Check if user is inside Barangay Santa Rita boundary
+        const inside = isPointInStaRita(coords[0], coords[1]);
+        if (!inside && !isOutsideServiceAreaRef.current) {
+          isOutsideServiceAreaRef.current = true;
+          setIsOutsideServiceArea(true);
+          speak("You have left the AccessiGo service area.");
+        } else if (inside && isOutsideServiceAreaRef.current) {
+          isOutsideServiceAreaRef.current = false;
+          setIsOutsideServiceArea(false);
+          speak("Welcome back inside Barangay Santa Rita service area.");
+        }
+      },
+      (err) => {
+        console.warn("GPS tracking warning:", err);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Register once on mount only
 
   // Initialize OpenLayers Map
   useEffect(() => {
@@ -460,12 +466,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ onSelectLocation
                 </button>
               </div>
 
-              <p className="text-xs text-slate-600 mt-2 leading-snug">{selectedSpot.description}</p>
+              <p className="text-xs text-slate-600 mt-2 leading-snug">{selectedSpot.notes || selectedSpot.audioCueText}</p>
 
               <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-bold">
                 {selectedSpot.hasRamp && <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">✓ Ramp</span>}
                 {selectedSpot.hasAccessibleRestroom && <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">✓ Restroom</span>}
-                {selectedSpot.tactilePaving && <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">✓ Tactile Paving</span>}
+                {selectedSpot.hasTactilePavingOrAudio && <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200">✓ Tactile Paving</span>}
               </div>
 
               {onSelectLocationForRoute && (
