@@ -142,7 +142,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] text-[#111827] font-sans flex flex-col selection:bg-[#1E3A8A] selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-[#111827] flex flex-col selection:bg-[#1E3A8A] selection:text-white">
 
       {/* In-App Toast Notification */}
       {toast && (
@@ -170,7 +170,7 @@ const MainAppContent: React.FC = () => {
       <Navigation />
 
       {/* Main Page View Content Container */}
-      <main className="flex-1 pb-16 lg:pb-4">
+      <main className="flex-1 pb-24 lg:pb-6">
         {activeSection === 'home' && <HomeDashboard />}
 
         {activeSection === 'plan_route' && (
@@ -228,14 +228,16 @@ const MainAppContent: React.FC = () => {
       {/* Voice Subtitles / Captions Banner Overlay */}
       <VoiceCaptionBanner />
 
-      {/* Footer matching Clean Minimalism theme */}
-      <footer className="bg-white border-t-2 border-gray-200 py-3.5 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 text-xs sm:text-sm font-bold text-gray-600">
-          <div>System: Ready · AccessiGo Sta. Rita, Olongapo City</div>
-          <div className="flex flex-wrap gap-2 sm:gap-3 items-center text-xs">
-            <span className="bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 text-slate-800">Contrast: Dynamic AAA</span>
-            <span className="bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 text-slate-800">Text: Accessible Scaled</span>
-            <span className="bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 text-slate-800 font-extrabold text-[#1E3A8A]">WCAG 2.1 AAA Compliant</span>
+      {/* Footer */}
+      <footer className="hidden lg:block bg-white border-t border-slate-200 py-3 px-6 lg:px-8">
+        <div className="max-w-screen-xl mx-auto flex justify-between items-center gap-4 text-xs text-slate-500 font-medium">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+            AccessiGo · Barangay Sta. Rita, Olongapo City
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg font-semibold">WCAG 2.1 AAA</span>
+            <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg font-semibold">PWD-Friendly</span>
           </div>
         </div>
       </footer>

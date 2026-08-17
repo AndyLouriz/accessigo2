@@ -1,166 +1,84 @@
 @import "ol/ol.css";
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @layer base {
-  /* High Focus Visibility Outline for Screen Readers and Keyboard Navigation */
-  html.high-focus *:focus-visible {
-    outline: 4px solid #1E3A8A !important;
-    outline-offset: 3px !important;
-    box-shadow: 0 0 0 6px rgba(30, 58, 138, 0.3) !important;
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
-  /* Reduced Motion for users sensitive to animations */
+  /* WCAG 2.5.5 — min tap target 44px on desktop is fine; mobile needs 48px */
+  button, input, select, textarea {
+    min-height: 40px;
+  }
+
+  /* High Focus Visibility */
+  html.high-focus *:focus-visible {
+    outline: 3px solid #1E3A8A !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px rgba(30, 58, 138, 0.2) !important;
+  }
+
+  /* Reduced Motion */
   html.reduced-motion *,
   html.reduced-motion *::before,
   html.reduced-motion *::after {
     animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 
-  /* HIGH CONTRAST DARK MODE OVERRIDES */
-  html.contrast-high_contrast,
-  html.contrast-high-contrast {
-    filter: contrast(115%);
-    background-color: #0F172A !important;
-    color: #FFFFFF !important;
-  }
-
-  html.contrast-high_contrast body,
-  html.contrast-high-contrast body {
-    background-color: #0F172A !important;
-    color: #FFFFFF !important;
-  }
-
-  /* Containers, Cards & Background Overrides in High Contrast Mode */
+  /* HIGH CONTRAST DARK */
+  html.contrast-high_contrast { filter: contrast(115%); background-color: #0F172A !important; color: #FFF !important; }
+  html.contrast-high_contrast body { background-color: #0F172A !important; color: #FFF !important; }
   html.contrast-high_contrast .bg-white,
-  html.contrast-high-contrast .bg-white,
   html.contrast-high_contrast .bg-slate-50,
-  html.contrast-high-contrast .bg-slate-50,
   html.contrast-high_contrast .bg-slate-100,
-  html.contrast-high-contrast .bg-slate-100,
-  html.contrast-high_contrast .bg-slate-200,
-  html.contrast-high-contrast .bg-slate-200,
   html.contrast-high_contrast .bg-gray-50,
-  html.contrast-high-contrast .bg-gray-50,
   html.contrast-high_contrast .bg-gray-100,
-  html.contrast-high-contrast .bg-gray-100,
   html.contrast-high_contrast .bg-blue-50,
-  html.contrast-high-contrast .bg-blue-50,
   html.contrast-high_contrast .bg-amber-50,
-  html.contrast-high-contrast .bg-amber-50,
   html.contrast-high_contrast .bg-emerald-50,
-  html.contrast-high-contrast .bg-emerald-50,
-  html.contrast-high_contrast .bg-red-50,
-  html.contrast-high-contrast .bg-red-50 {
-    background-color: #1E293B !important;
-    color: #FFFFFF !important;
-    border-color: #64748B !important;
-  }
-
-  /* Text color resets in High Contrast Mode */
+  html.contrast-high_contrast .bg-red-50 { background-color: #1E293B !important; color: #FFF !important; border-color: #64748B !important; }
   html.contrast-high_contrast p,
-  html.contrast-high-contrast p,
-  html.contrast-high_contrast h1,
-  html.contrast-high-contrast h1,
-  html.contrast-high_contrast h2,
-  html.contrast-high-contrast h2,
-  html.contrast-high_contrast h3,
-  html.contrast-high-contrast h3,
-  html.contrast-high_contrast h4,
-  html.contrast-high-contrast h4,
-  html.contrast-high_contrast label,
-  html.contrast-high-contrast label {
-    color: #F8FAFC !important;
-  }
-
-  /* Form Inputs and Selects in High Contrast Mode */
+  html.contrast-high_contrast h1, html.contrast-high_contrast h2,
+  html.contrast-high_contrast h3, html.contrast-high_contrast h4,
+  html.contrast-high_contrast label { color: #F8FAFC !important; }
   html.contrast-high_contrast input,
-  html.contrast-high-contrast input,
   html.contrast-high_contrast select,
-  html.contrast-high-contrast select,
-  html.contrast-high_contrast textarea,
-  html.contrast-high-contrast textarea {
-    background-color: #0F172A !important;
-    color: #FFFFFF !important;
-    border-color: #94A3B8 !important;
-  }
+  html.contrast-high_contrast textarea { background-color: #0F172A !important; color: #FFF !important; border-color: #94A3B8 !important; }
+  html.contrast-high_contrast option { background-color: #0F172A !important; color: #FFF !important; }
+  html.contrast-high_contrast .ol-viewport { filter: contrast(130%) brightness(95%); }
 
-  html.contrast-high_contrast option,
-  html.contrast-high-contrast option {
-    background-color: #0F172A !important;
-    color: #FFFFFF !important;
-  }
-
-  /* High Contrast Map Styling */
-  html.contrast-high_contrast .ol-viewport,
-  html.contrast-high-contrast .ol-viewport {
-    filter: contrast(130%) brightness(95%);
-  }
-
-  /* YELLOW ON BLACK CONTRAST MODE FOR LOW VISION PWD USERS */
-  html.contrast-yellow_black,
-  html.contrast-yellow-black {
-    background-color: #000000 !important;
-    color: #FFFF00 !important;
-  }
-
-  html.contrast-yellow_black body,
-  html.contrast-yellow-black body {
-    background-color: #000000 !important;
-    color: #FFFF00 !important;
-  }
-
-  html.contrast-yellow_black *,
-  html.contrast-yellow-black * {
-    background-color: #000000 !important;
-    color: #FFFF00 !important;
-    border-color: #FFFF00 !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  html.contrast-yellow_black svg,
-  html.contrast-yellow-black svg {
-    stroke: #FFFF00 !important;
-    color: #FFFF00 !important;
-  }
-
-  html.contrast-yellow_black button,
-  html.contrast-yellow-black button,
-  html.contrast-yellow_black input,
-  html.contrast-yellow-black input,
-  html.contrast-yellow_black select,
-  html.contrast-yellow-black select,
-  html.contrast-yellow_black a,
-  html.contrast-yellow-black a {
-    border: 2px solid #FFFF00 !important;
-    outline: 2px solid #FFFF00 !important;
-  }
-
-  html.contrast-yellow_black option,
-  html.contrast-yellow-black option {
-    background-color: #000000 !important;
-    color: #FFFF00 !important;
-  }
-
-  /* Yellow & Black Map Inversion for High Visibility */
-  html.contrast-yellow_black .ol-viewport,
-  html.contrast-yellow-black .ol-viewport {
-    filter: invert(100%) hue-rotate(180deg) contrast(150%);
-  }
+  /* YELLOW ON BLACK */
+  html.contrast-yellow_black { background-color: #000 !important; color: #FFFF00 !important; }
+  html.contrast-yellow_black body { background-color: #000 !important; color: #FFFF00 !important; }
+  html.contrast-yellow_black * { background-color: #000 !important; color: #FFFF00 !important; border-color: #FFFF00 !important; box-shadow: none !important; }
+  html.contrast-yellow_black svg { stroke: #FFFF00 !important; color: #FFFF00 !important; }
+  html.contrast-yellow_black button, html.contrast-yellow_black input,
+  html.contrast-yellow_black select, html.contrast-yellow_black a { border: 2px solid #FFFF00 !important; }
+  html.contrast-yellow_black option { background-color: #000 !important; color: #FFFF00 !important; }
+  html.contrast-yellow_black .ol-viewport { filter: invert(100%) hue-rotate(180deg) contrast(150%); }
 }
 
-/* Ensure smooth touch targets min 44px on mobile controls */
-button, input, select, textarea, a {
-  min-height: 44px;
-}
-
-/* OpenLayers map accessibility fixes */
+/* OpenLayers */
 .ol-control button {
   min-width: 44px !important;
   min-height: 44px !important;
-  font-size: 20px !important;
+  font-size: 18px !important;
   font-weight: bold !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F1F5F9; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* Card hover */
+.card-hover {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 16px -4px rgba(30, 58, 138, 0.14);
 }

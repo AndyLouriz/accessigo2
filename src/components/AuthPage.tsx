@@ -1,72 +1,143 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DisabilityType } from '../types';
-import { Eye, EyeOff, UserPlus, LogIn, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import {
+  Eye, EyeOff, UserPlus, LogIn, Loader2, AlertCircle,
+  CheckCircle2, Accessibility, ShieldCheck,
+} from 'lucide-react';
 
 type AuthTab = 'login' | 'signup';
 
 const DISABILITY_OPTIONS: { value: DisabilityType; label: string; emoji: string }[] = [
   { value: 'wheelchair', label: 'Wheelchair User / Mobility Impaired', emoji: '♿' },
-  { value: 'mobility', label: 'Physical / Mobility Impairment', emoji: '🦽' },
-  { value: 'visual', label: 'Visual Impairment / Blindness', emoji: '🦯' },
-  { value: 'hearing', label: 'Hearing Impairment / Deafness', emoji: '👂' },
-  { value: 'cognitive', label: 'Cognitive / Learning Difficulty', emoji: '🧠' },
-  { value: 'senior', label: 'Senior Citizen with Mobility Needs', emoji: '🧓' },
-  { value: 'multiple', label: 'Multiple Disabilities', emoji: '⚕️' },
-  { value: 'caregiver', label: 'Caregiver / Family Member', emoji: '🤝' },
+  { value: 'mobility',   label: 'Physical / Mobility Impairment',      emoji: '🦽' },
+  { value: 'visual',     label: 'Visual Impairment / Blindness',       emoji: '🦯' },
+  { value: 'hearing',    label: 'Hearing Impairment / Deafness',       emoji: '👂' },
+  { value: 'cognitive',  label: 'Cognitive / Learning Difficulty',     emoji: '🧠' },
+  { value: 'senior',     label: 'Senior Citizen with Mobility Needs',  emoji: '🧓' },
+  { value: 'multiple',   label: 'Multiple Disabilities',               emoji: '⚕️' },
+  { value: 'caregiver',  label: 'Caregiver / Family Member',           emoji: '🤝' },
 ];
 
+/* ── Accessible input wrapper ─────────────────────────────────────────────── */
+interface InputFieldProps {
+  id: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  error?: string;
+  autoComplete?: string;
+  suffix?: React.ReactNode;
+  hint?: string;
+}
+
+const InputField: React.FC<InputFieldProps> = ({
+  id, label, type = 'text', value, onChange, placeholder, error, autoComplete, suffix, hint,
+}) => (
+  <div className="space-y-1.5">
+    <label htmlFor={id} className="block text-sm font-bold text-slate-700">
+      {label}
+      {hint && <span className="ml-2 text-xs font-normal text-slate-400">{hint}</span>}
+    </label>
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className={`w-full px-4 py-3.5 rounded-xl border-2 text-base font-medium text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none transition-colors ${
+          suffix ? 'pr-12' : ''
+        } ${
+          error
+            ? 'border-red-400 bg-red-50 focus:border-red-500'
+            : 'border-slate-200 focus:border-[#1E3A8A] hover:border-slate-300'
+        }`}
+      />
+      {suffix && (
+        <div className="absolute right-0 top-0 h-full flex items-center pr-3">
+          {suffix}
+        </div>
+      )}
+    </div>
+    {error && (
+      <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
+        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+/* ── Password toggle button ────────────────────────────────────────────────── */
+const PwToggle: React.FC<{ show: boolean; onToggle: () => void }> = ({ show, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-label={show ? 'Hide password' : 'Show password'}
+    className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 rounded-lg transition-colors"
+  >
+    {show ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+  </button>
+);
+
+/* ── Main AuthPage ─────────────────────────────────────────────────────────── */
 export const AuthPage: React.FC = () => {
   const { signup, login, authError, clearAuthError, isLoading: authLoading } = useAuth();
-  const [tab, setTab] = useState<AuthTab>('login');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Login fields
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [tab, setTab]                       = useState<AuthTab>('login');
+  const [isSubmitting, setIsSubmitting]     = useState(false);
+  const [showPw, setShowPw]                 = useState(false);
+  const [showConfirmPw, setShowConfirmPw]   = useState(false);
+  const [successMsg, setSuccessMsg]         = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors]       = useState<Record<string, string>>({});
 
-  // Signup fields
-  const [signupFullName, setSignupFullName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [signupDisability, setSignupDisability] = useState<DisabilityType>('wheelchair');
+  // Login
+  const [loginEmail, setLoginEmail]         = useState('');
+  const [loginPassword, setLoginPassword]   = useState('');
 
-  // Inline validation
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Signup
+  const [name, setName]           = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [disability, setDisability] = useState<DisabilityType>('wheelchair');
 
-  // Clear errors when switching tabs
   useEffect(() => {
     clearAuthError();
     setFieldErrors({});
     setSuccessMsg(null);
   }, [tab, clearAuthError]);
 
-  const validateLogin = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!loginEmail.trim()) errs.loginEmail = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)) errs.loginEmail = 'Enter a valid email address.';
-    if (!loginPassword) errs.loginPassword = 'Password is required.';
-    setFieldErrors(errs);
-    return Object.keys(errs).length === 0;
+  /* ── Validation ──────────────────────────────────────────────────────────── */
+  const validateLogin = () => {
+    const e: Record<string, string> = {};
+    if (!loginEmail.trim())                                   e.loginEmail    = 'Email is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail)) e.loginEmail    = 'Enter a valid email address.';
+    if (!loginPassword)                                       e.loginPassword = 'Password is required.';
+    setFieldErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const validateSignup = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!signupFullName.trim()) errs.signupFullName = 'Full name is required.';
-    if (!signupEmail.trim()) errs.signupEmail = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail)) errs.signupEmail = 'Enter a valid email address.';
-    if (!signupPassword) errs.signupPassword = 'Password is required.';
-    else if (signupPassword.length < 6) errs.signupPassword = 'Password must be at least 6 characters.';
-    if (!signupConfirmPassword) errs.signupConfirmPassword = 'Please confirm your password.';
-    else if (signupPassword !== signupConfirmPassword) errs.signupConfirmPassword = 'Passwords do not match.';
-    setFieldErrors(errs);
-    return Object.keys(errs).length === 0;
+  const validateSignup = () => {
+    const e: Record<string, string> = {};
+    if (!name.trim())                                         e.name    = 'Full name is required.';
+    if (!email.trim())                                        e.email   = 'Email is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))      e.email   = 'Enter a valid email address.';
+    if (!password)                                            e.pw      = 'Password is required.';
+    else if (password.length < 6)                             e.pw      = 'Password must be at least 6 characters.';
+    if (!confirmPw)                                           e.cpw     = 'Please confirm your password.';
+    else if (password !== confirmPw)                          e.cpw     = 'Passwords do not match.';
+    setFieldErrors(e);
+    return Object.keys(e).length === 0;
   };
 
+  /* ── Handlers ────────────────────────────────────────────────────────────── */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateLogin()) return;
@@ -81,322 +152,239 @@ export const AuthPage: React.FC = () => {
     if (!validateSignup()) return;
     setIsSubmitting(true);
     clearAuthError();
-    const ok = await signup(signupFullName.trim(), signupEmail.trim(), signupPassword, signupDisability);
+    const ok = await signup(name.trim(), email.trim(), password, disability);
     setIsSubmitting(false);
-    if (ok) {
-      setSuccessMsg(`Welcome to AccessiGo, ${signupFullName.trim().split(' ')[0]}! 🎉`);
-    }
+    if (ok) setSuccessMsg(`Welcome, ${name.trim().split(' ')[0]}! Setting up your profile…`);
   };
 
-  // While checking existing session on mount
+  /* ── Loading splash ──────────────────────────────────────────────────────── */
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-white to-[#FFF7ED] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-[#1E3A8A]">
-          <div className="w-14 h-14 rounded-full border-4 border-blue-200 border-t-[#1E3A8A] animate-spin" />
-          <p className="font-bold text-base">Loading AccessiGo…</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#1E3A8A] flex items-center justify-center text-white font-black text-3xl shadow-xl animate-pulse">
+            A
+          </div>
+          <div className="flex items-center gap-2 text-[#1E3A8A] font-bold text-base">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Loading AccessiGo…
+          </div>
         </div>
       </div>
     );
   }
 
+  /* ── Main render ─────────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-white to-[#FFF7ED] flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-white to-[#FFF7ED] flex flex-col">
 
-      {/* Branding */}
-      <div className="mb-8 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#1E3A8A] text-white font-black text-3xl shadow-lg mb-4">
-          A
-        </div>
-        <h1 className="text-4xl font-black text-[#1E3A8A] tracking-tight">
-          Accessi<span className="text-[#F59E0B]">Go</span>
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-1">
-          Accessible Route Planning · Barangay Sta. Rita, Olongapo City
-        </p>
-      </div>
+      {/* Top decorative bar */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#F59E0B]" />
 
-      {/* Card */}
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border-2 border-slate-100 overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
 
-        {/* Tab switcher */}
-        <div className="flex border-b-2 border-slate-100">
-          <button
-            type="button"
-            onClick={() => setTab('login')}
-            className={`flex-1 py-4 flex items-center justify-center gap-2 font-extrabold text-sm transition-all focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 ${
-              tab === 'login'
-                ? 'bg-[#1E3A8A] text-white'
-                : 'bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <LogIn className="w-4 h-4" />
-            Log In
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('signup')}
-            className={`flex-1 py-4 flex items-center justify-center gap-2 font-extrabold text-sm transition-all focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 ${
-              tab === 'signup'
-                ? 'bg-[#1E3A8A] text-white'
-                : 'bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <UserPlus className="w-4 h-4" />
-            Create Account
-          </button>
+        {/* ── Branding block ────────────────────────────────────────────── */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white font-black text-4xl shadow-2xl mb-5 ring-4 ring-blue-200">
+            A
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-black text-[#1E3A8A] tracking-tight">
+            Accessi<span className="text-[#F59E0B]">Go</span>
+          </h1>
+          <p className="text-sm text-slate-500 font-semibold mt-2 tracking-wide">
+            Accessible Route Planning · Barangay Sta. Rita, Olongapo City
+          </p>
+
+          {/* Trust badge */}
+          <div className="inline-flex items-center gap-2 mt-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            WCAG 2.1 AAA · PWD-Friendly Design
+          </div>
         </div>
 
-        <div className="p-6 sm:p-8">
+        {/* ── Auth card ─────────────────────────────────────────────────── */}
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
 
-          {/* Global error banner */}
-          {authError && (
-            <div role="alert" className="mb-5 flex items-start gap-3 p-4 bg-red-50 border-2 border-red-300 rounded-2xl text-red-800 text-sm font-bold">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-500" />
-              <span>{authError}</span>
-            </div>
-          )}
-
-          {/* Success banner */}
-          {successMsg && (
-            <div role="status" className="mb-5 flex items-start gap-3 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-emerald-800 text-sm font-bold">
-              <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-emerald-500" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* ── LOGIN FORM ── */}
-          {tab === 'login' && (
-            <form onSubmit={handleLogin} noValidate className="space-y-5" aria-label="Login form">
-              <div>
-                <label htmlFor="login-email" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  id="login-email"
-                  type="email"
-                  autoComplete="email"
-                  value={loginEmail}
-                  onChange={e => { setLoginEmail(e.target.value); setFieldErrors(p => ({ ...p, loginEmail: '' })); }}
-                  placeholder="your@email.com"
-                  className={`w-full px-4 py-3.5 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                    fieldErrors.loginEmail ? 'border-red-400 bg-red-50' : 'border-slate-200'
+            {/* Tab bar */}
+            <div className="flex border-b-2 border-slate-100" role="tablist" aria-label="Authentication options">
+              {(['login', 'signup'] as AuthTab[]).map(t => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  onClick={() => setTab(t)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-4 font-extrabold text-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
+                    tab === t
+                      ? 'bg-[#1E3A8A] text-white'
+                      : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                   }`}
-                />
-                {fieldErrors.loginEmail && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.loginEmail}</p>
-                )}
-              </div>
+                >
+                  {t === 'login' ? <><LogIn className="w-4 h-4" /> Log In</> : <><UserPlus className="w-4 h-4" /> Create Account</>}
+                </button>
+              ))}
+            </div>
 
-              <div>
-                <label htmlFor="login-password" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
+            <div className="p-6 sm:p-8">
+
+              {/* Error banner */}
+              {authError && (
+                <div role="alert" aria-live="assertive" className="mb-6 flex items-start gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-2xl">
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold text-red-700 leading-snug">{authError}</p>
+                </div>
+              )}
+
+              {/* Success banner */}
+              {successMsg && (
+                <div role="status" aria-live="polite" className="mb-6 flex items-start gap-3 p-4 bg-emerald-50 border-2 border-emerald-200 rounded-2xl">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold text-emerald-700 leading-snug">{successMsg}</p>
+                </div>
+              )}
+
+              {/* ── LOGIN FORM ─────────────────────────────────────────── */}
+              {tab === 'login' && (
+                <form onSubmit={handleLogin} noValidate aria-label="Login form" className="space-y-5">
+                  <InputField
+                    id="login-email"
+                    label="Email Address"
+                    type="email"
+                    value={loginEmail}
+                    onChange={v => { setLoginEmail(v); setFieldErrors(p => ({ ...p, loginEmail: '' })); }}
+                    placeholder="your@email.com"
+                    error={fieldErrors.loginEmail}
+                    autoComplete="email"
+                  />
+                  <InputField
                     id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    label="Password"
+                    type={showPw ? 'text' : 'password'}
                     value={loginPassword}
-                    onChange={e => { setLoginPassword(e.target.value); setFieldErrors(p => ({ ...p, loginPassword: '' })); }}
+                    onChange={v => { setLoginPassword(v); setFieldErrors(p => ({ ...p, loginPassword: '' })); }}
                     placeholder="Enter your password"
-                    className={`w-full px-4 py-3.5 pr-12 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                      fieldErrors.loginPassword ? 'border-red-400 bg-red-50' : 'border-slate-200'
-                    }`}
+                    error={fieldErrors.loginPassword}
+                    autoComplete="current-password"
+                    suffix={<PwToggle show={showPw} onToggle={() => setShowPw(p => !p)} />}
                   />
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(p => !p)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-none"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-4 mt-1 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#1e40af] hover:to-[#1d4ed8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {isSubmitting
+                      ? <><Loader2 className="w-5 h-5 animate-spin" /> Logging in…</>
+                      : <><LogIn className="w-5 h-5" /> Log In to AccessiGo</>
+                    }
                   </button>
-                </div>
-                {fieldErrors.loginPassword && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.loginPassword}</p>
-                )}
-              </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 bg-[#1E3A8A] hover:bg-blue-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 mt-2"
-              >
-                {isSubmitting ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Logging in…</>
-                ) : (
-                  <><LogIn className="w-5 h-5" /> Log In to AccessiGo</>
-                )}
-              </button>
+                  <p className="text-center text-sm text-slate-500 pt-1">
+                    No account?{' '}
+                    <button type="button" onClick={() => setTab('signup')}
+                      className="text-[#1E3A8A] font-bold underline underline-offset-2 hover:text-blue-700 focus:outline-none">
+                      Create one here
+                    </button>
+                  </p>
+                </form>
+              )}
 
-              <p className="text-center text-sm text-slate-500 font-medium pt-1">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setTab('signup')}
-                  className="text-[#1E3A8A] font-extrabold underline underline-offset-2 hover:text-blue-700 focus:outline-none"
-                >
-                  Create one here
-                </button>
-              </p>
-            </form>
-          )}
+              {/* ── SIGNUP FORM ────────────────────────────────────────── */}
+              {tab === 'signup' && (
+                <form onSubmit={handleSignup} noValidate aria-label="Sign up form" className="space-y-4">
+                  <InputField
+                    id="signup-name"
+                    label="Full Name"
+                    value={name}
+                    onChange={v => { setName(v); setFieldErrors(p => ({ ...p, name: '' })); }}
+                    placeholder="e.g. Juan dela Cruz"
+                    error={fieldErrors.name}
+                    autoComplete="name"
+                  />
+                  <InputField
+                    id="signup-email"
+                    label="Email Address"
+                    type="email"
+                    value={email}
+                    onChange={v => { setEmail(v); setFieldErrors(p => ({ ...p, email: '' })); }}
+                    placeholder="your@email.com"
+                    error={fieldErrors.email}
+                    autoComplete="email"
+                  />
 
-          {/* ── SIGNUP FORM ── */}
-          {tab === 'signup' && (
-            <form onSubmit={handleSignup} noValidate className="space-y-4" aria-label="Sign up form">
+                  {/* Disability selector */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="signup-disability" className="block text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Accessibility className="w-4 h-4 text-[#1E3A8A]" />
+                      Primary Disability / Role
+                    </label>
+                    <select
+                      id="signup-disability"
+                      value={disability}
+                      onChange={e => setDisability(e.target.value as DisabilityType)}
+                      className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 hover:border-slate-300 focus:border-[#1E3A8A] text-base font-medium text-slate-900 bg-white focus:outline-none transition-colors"
+                    >
+                      {DISABILITY_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.emoji} {o.label}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div>
-                <label htmlFor="signup-name" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  id="signup-name"
-                  type="text"
-                  autoComplete="name"
-                  value={signupFullName}
-                  onChange={e => { setSignupFullName(e.target.value); setFieldErrors(p => ({ ...p, signupFullName: '' })); }}
-                  placeholder="e.g. Juan dela Cruz"
-                  className={`w-full px-4 py-3.5 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                    fieldErrors.signupFullName ? 'border-red-400 bg-red-50' : 'border-slate-200'
-                  }`}
-                />
-                {fieldErrors.signupFullName && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.signupFullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="signup-email" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  id="signup-email"
-                  type="email"
-                  autoComplete="email"
-                  value={signupEmail}
-                  onChange={e => { setSignupEmail(e.target.value); setFieldErrors(p => ({ ...p, signupEmail: '' })); }}
-                  placeholder="your@email.com"
-                  className={`w-full px-4 py-3.5 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                    fieldErrors.signupEmail ? 'border-red-400 bg-red-50' : 'border-slate-200'
-                  }`}
-                />
-                {fieldErrors.signupEmail && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.signupEmail}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="signup-disability" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Primary Disability / Role
-                </label>
-                <select
-                  id="signup-disability"
-                  value={signupDisability}
-                  onChange={e => setSignupDisability(e.target.value as DisabilityType)}
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors"
-                >
-                  {DISABILITY_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.emoji} {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="signup-password" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Password <span className="font-medium text-slate-400">(min. 6 characters)</span>
-                </label>
-                <div className="relative">
-                  <input
+                  <InputField
                     id="signup-password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={signupPassword}
-                    onChange={e => { setSignupPassword(e.target.value); setFieldErrors(p => ({ ...p, signupPassword: '' })); }}
+                    label="Password"
+                    hint="(min. 6 characters)"
+                    type={showPw ? 'text' : 'password'}
+                    value={password}
+                    onChange={v => { setPassword(v); setFieldErrors(p => ({ ...p, pw: '' })); }}
                     placeholder="Create a password"
-                    className={`w-full px-4 py-3.5 pr-12 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                      fieldErrors.signupPassword ? 'border-red-400 bg-red-50' : 'border-slate-200'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(p => !p)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {fieldErrors.signupPassword && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.signupPassword}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="signup-confirm-password" className="block text-sm font-bold text-slate-700 mb-1.5">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="signup-confirm-password"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    error={fieldErrors.pw}
                     autoComplete="new-password"
-                    value={signupConfirmPassword}
-                    onChange={e => { setSignupConfirmPassword(e.target.value); setFieldErrors(p => ({ ...p, signupConfirmPassword: '' })); }}
-                    placeholder="Re-enter your password"
-                    className={`w-full px-4 py-3.5 pr-12 rounded-xl border-2 text-base font-semibold text-slate-900 bg-slate-50 focus:outline-none focus:border-[#1E3A8A] transition-colors ${
-                      fieldErrors.signupConfirmPassword ? 'border-red-400 bg-red-50' : 'border-slate-200'
-                    }`}
+                    suffix={<PwToggle show={showPw} onToggle={() => setShowPw(p => !p)} />}
                   />
+                  <InputField
+                    id="signup-confirm-password"
+                    label="Confirm Password"
+                    type={showConfirmPw ? 'text' : 'password'}
+                    value={confirmPw}
+                    onChange={v => { setConfirmPw(v); setFieldErrors(p => ({ ...p, cpw: '' })); }}
+                    placeholder="Re-enter your password"
+                    error={fieldErrors.cpw}
+                    autoComplete="new-password"
+                    suffix={<PwToggle show={showConfirmPw} onToggle={() => setShowConfirmPw(p => !p)} />}
+                  />
+
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(p => !p)}
-                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 focus:outline-none"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-4 mt-1 bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#1e40af] hover:to-[#1d4ed8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {isSubmitting
+                      ? <><Loader2 className="w-5 h-5 animate-spin" /> Creating account…</>
+                      : <><UserPlus className="w-5 h-5" /> Create My Account</>
+                    }
                   </button>
-                </div>
-                {fieldErrors.signupConfirmPassword && (
-                  <p className="mt-1 text-xs font-bold text-red-600">{fieldErrors.signupConfirmPassword}</p>
-                )}
-              </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 bg-[#1E3A8A] hover:bg-blue-900 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 mt-2"
-              >
-                {isSubmitting ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Creating account…</>
-                ) : (
-                  <><UserPlus className="w-5 h-5" /> Create My Account</>
-                )}
-              </button>
+                  <p className="text-center text-sm text-slate-500 pt-1">
+                    Already have an account?{' '}
+                    <button type="button" onClick={() => setTab('login')}
+                      className="text-[#1E3A8A] font-bold underline underline-offset-2 hover:text-blue-700 focus:outline-none">
+                      Log in here
+                    </button>
+                  </p>
+                </form>
+              )}
 
-              <p className="text-center text-sm text-slate-500 font-medium pt-1">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setTab('login')}
-                  className="text-[#1E3A8A] font-extrabold underline underline-offset-2 hover:text-blue-700 focus:outline-none"
-                >
-                  Log in here
-                </button>
-              </p>
-            </form>
-          )}
+            </div>
+          </div>
 
+          {/* Footer note */}
+          <p className="mt-6 text-center text-xs text-slate-400 leading-relaxed px-4">
+            🔒 Your data is stored securely and locally. AccessiGo is a community accessibility tool for{' '}
+            <strong className="text-slate-500">Sta. Rita, Olongapo City</strong>.
+          </p>
         </div>
       </div>
-
-      {/* Footer note */}
-      <p className="mt-6 text-xs text-slate-400 font-medium text-center max-w-sm">
-        Your data is stored locally and securely on this device. AccessiGo is a barangay community accessibility tool for Sta. Rita, Olongapo City.
-      </p>
     </div>
   );
 };

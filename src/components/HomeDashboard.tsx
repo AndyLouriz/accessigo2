@@ -1,197 +1,159 @@
 import React from 'react';
 import { useAccessibility } from '../context/AccessibilityContext';
-import { 
-  Navigation as RouteIcon, 
-  MapPin, 
-  Bookmark, 
-  Mic, 
-  Settings, 
-  HelpCircle, 
-  CheckCircle2, 
-  AlertOctagon, 
-  ShieldCheck, 
-  PhoneCall, 
-  PlusCircle, 
-  ChevronRight 
+import { useAuth } from '../context/AuthContext';
+import {
+  Navigation as RouteIcon, MapPin, Bookmark, Mic, Settings,
+  PhoneCall, Flag, ShieldCheck, AlertOctagon, ChevronRight, Rss,
 } from 'lucide-react';
+
+const featureCards = [
+  { id: 'nearby',       icon: MapPin,    label: 'Nearby Places',  desc: 'Clinics, ramps & facilities',    color: 'blue',   announce: 'Opening Nearby Places.' },
+  { id: 'saved_routes', icon: Bookmark,  label: 'Saved Routes',   desc: 'Your favourite trips',           color: 'indigo', announce: 'Opening Saved Routes.' },
+  { id: 'live_voice',   icon: Mic,       label: 'Voice Guidance', desc: 'AI-powered audio navigation',    color: 'amber',  badge: 'LIVE', announce: 'Opening Voice Guidance.' },
+  { id: 'settings',     icon: Settings,  label: 'Settings',       desc: 'Text size, contrast & profile',  color: 'slate',  announce: 'Opening Accessibility Settings.' },
+  { id: 'report_issue', icon: Flag,      label: 'Report Barrier', desc: 'Broken ramps or obstacles',      color: 'orange', announce: 'Opening Report Issue.' },
+  { id: 'emergency',    icon: PhoneCall, label: 'Emergency Help', desc: 'Contact Barangay Hall',          color: 'red',    announce: 'Opening Emergency Help.' },
+] as const;
+
+type CardColor = 'blue' | 'indigo' | 'amber' | 'slate' | 'orange' | 'red';
+
+const colorMap: Record<CardColor, { border: string; bg: string; iconBg: string; iconText: string; badge: string }> = {
+  blue:   { border: 'border-blue-200 hover:border-blue-400',   bg: 'bg-white hover:bg-blue-50',    iconBg: 'bg-blue-100',   iconText: 'text-blue-700',   badge: 'bg-blue-600 text-white' },
+  indigo: { border: 'border-indigo-200 hover:border-indigo-400', bg: 'bg-white hover:bg-indigo-50', iconBg: 'bg-indigo-100', iconText: 'text-indigo-700', badge: 'bg-indigo-600 text-white' },
+  amber:  { border: 'border-amber-300 hover:border-amber-500',  bg: 'bg-amber-50 hover:bg-amber-100', iconBg: 'bg-amber-200', iconText: 'text-amber-800', badge: 'bg-amber-500 text-slate-900' },
+  slate:  { border: 'border-slate-200 hover:border-slate-400', bg: 'bg-white hover:bg-slate-50',   iconBg: 'bg-slate-100',  iconText: 'text-slate-600',  badge: 'bg-slate-600 text-white' },
+  orange: { border: 'border-orange-200 hover:border-orange-400', bg: 'bg-white hover:bg-orange-50', iconBg: 'bg-orange-100', iconText: 'text-orange-700', badge: 'bg-orange-500 text-white' },
+  red:    { border: 'border-red-300 hover:border-red-500',      bg: 'bg-red-50 hover:bg-red-100',  iconBg: 'bg-red-100',    iconText: 'text-red-700',    badge: 'bg-red-600 text-white' },
+};
 
 export const HomeDashboard: React.FC = () => {
   const { setActiveSection, speak } = useAccessibility();
+  const { currentUser } = useAuth();
 
-  const handleAction = (sectionId: string, announceText: string) => {
-    setActiveSection(sectionId);
-    speak(announceText);
+  const go = (id: string, announce: string) => {
+    setActiveSection(id);
+    speak(announce);
   };
 
-  const shortcutCards = [
-    {
-      id: 'nearby',
-      title: 'Nearby Places',
-      description: 'Accessible clinics & facilities',
-      emoji: '📍',
-      cardStyle: 'bg-white border-4 border-white hover:border-[#F59E0B] text-[#111827]',
-      announce: 'Opening Nearby Accessible Places directory.'
-    },
-    {
-      id: 'saved_routes',
-      title: 'Saved Routes',
-      description: 'Quick access to your trips',
-      emoji: '⭐',
-      cardStyle: 'bg-white border-4 border-white hover:border-[#F59E0B] text-[#111827]',
-      announce: 'Opening Saved Routes.'
-    },
-    {
-      id: 'live_voice',
-      title: 'Voice Guidance',
-      description: 'AI Audio Navigation Active',
-      emoji: '🎙️',
-      cardStyle: 'bg-white border-4 border-[#F59E0B] text-[#111827] relative',
-      hasPing: true,
-      announce: 'Opening AI Voice Guidance.'
-    },
-    {
-      id: 'settings',
-      title: 'Preferences',
-      description: 'Adjust text & contrast',
-      emoji: '⚙️',
-      cardStyle: 'bg-white border-4 border-white hover:border-[#F59E0B] text-[#111827]',
-      announce: 'Opening Accessibility Settings.'
-    },
-    {
-      id: 'report_issue',
-      title: 'Report Barrier',
-      description: 'Report broken ramps or roads',
-      emoji: '🚧',
-      cardStyle: 'bg-white border-4 border-white hover:border-[#F59E0B] text-[#111827]',
-      announce: 'Opening Report Issue.'
-    },
-    {
-      id: 'emergency',
-      title: 'Emergency',
-      description: 'Contact Barangay Hall',
-      emoji: '🆘',
-      cardStyle: 'bg-[#FEE2E2] border-4 border-[#EF4444] text-[#991B1B]',
-      announce: 'Opening Help and Barangay Emergency Assistance.'
-    }
-  ];
+  const firstName = currentUser?.fullName?.split(' ')[0] ?? 'there';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6 space-y-6 lg:space-y-8">
-      
-      {/* Hero Welcome Banner */}
-      <section 
-        aria-label="Welcome Banner" 
-        className="text-center space-y-3 lg:space-y-4 max-w-4xl mx-auto"
-      >
-        <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/10 border border-[#1E3A8A]/20 text-[#1E3A8A] px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-          📍 Barangay Sta. Rita · Olongapo City
+    <div className="max-w-screen-xl mx-auto px-5 lg:px-8 py-5 space-y-5">
+
+      {/* ── Hero + CTA ───────────────────────────────────────────────────── */}
+      <section className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] rounded-2xl p-6 lg:p-8 flex flex-col lg:flex-row items-center justify-between gap-5 shadow-md">
+        <div className="text-white space-y-2">
+          <div className="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-xs font-bold tracking-wider">
+            <Rss className="w-3 h-3" /> Barangay Sta. Rita · Olongapo City
+          </div>
+          <h1 className="text-2xl lg:text-3xl font-black leading-tight">
+            {currentUser ? <>Hello, {firstName}!</> : <>Welcome to AccessiGo</>}
+          </h1>
+          <p className="text-blue-100 text-sm font-medium leading-snug max-w-md">
+            Find safer, wheelchair-friendly routes around Barangay Sta. Rita. Powered by accessibility data.
+          </p>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black leading-tight text-[#111827]">
-          Welcome to <span className="text-[#1E3A8A]">AccessiGo</span>
-        </h1>
-
-        <p className="text-base sm:text-xl text-[#4B5563] font-medium leading-relaxed max-w-3xl mx-auto">
-          Find safer and more accessible routes around Barangay Sta. Rita, Olongapo City.
-        </p>
-
-        {/* Core Prominent Primary Button */}
-        <div className="pt-2 max-w-2xl mx-auto">
-          <button
-            onClick={() => handleAction('plan_route', 'Opening Plan Accessible Route page.')}
-            className="w-full py-4 lg:py-5 px-6 lg:px-8 bg-[#1E3A8A] text-white rounded-2xl text-xl sm:text-2xl font-black shadow-lg ring-4 ring-blue-100 hover:bg-blue-900 transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer focus:outline-none"
-          >
-            <span>PLAN AN ACCESSIBLE ROUTE</span>
-            <span className="text-2xl sm:text-3xl">→</span>
-          </button>
-        </div>
+        <button
+          onClick={() => go('plan_route', 'Opening Plan Accessible Route page.')}
+          aria-label="Plan an accessible route"
+          className="shrink-0 flex items-center gap-2 bg-[#F59E0B] hover:bg-amber-400 active:scale-[0.98] text-slate-900 font-black text-base px-6 py-3.5 rounded-xl shadow-lg transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300 whitespace-nowrap"
+        >
+          <RouteIcon className="w-5 h-5 shrink-0" />
+          Plan Accessible Route
+          <ChevronRight className="w-4 h-4 shrink-0" />
+        </button>
       </section>
 
-      {/* Primary Shortcut Cards Grid */}
-      <section aria-label="Main Application Features" className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {shortcutCards.map((card) => (
-            <button
-              key={card.id}
-              onClick={() => handleAction(card.id, card.announce)}
-              className={`p-4 rounded-2xl shadow-md transition-all cursor-pointer flex flex-col items-center text-center gap-2 active:scale-[0.98] focus:outline-none ${card.cardStyle}`}
-            >
-              {card.hasPing && (
-                <div className="absolute top-2.5 right-2.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+      {/* ── Feature Cards ────────────────────────────────────────────────── */}
+      <section aria-label="Application Features">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Quick Access</p>
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+          {featureCards.map(({ id, icon: Icon, label, desc, color, badge, announce }) => {
+            const c = colorMap[color as CardColor];
+            return (
+              <button
+                key={id}
+                onClick={() => go(id, announce)}
+                className={`card-hover relative flex flex-col items-start gap-2.5 p-4 rounded-xl border-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${c.border} ${c.bg}`}
+              >
+                {badge && (
+                  <span className={`absolute top-2.5 right-2.5 text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none ${c.badge}`}>
+                    {badge}
+                  </span>
+                )}
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${c.iconBg}`}>
+                  <Icon className={`w-4 h-4 ${c.iconText}`} />
                 </div>
-              )}
-              <span className="text-3xl sm:text-4xl">{card.emoji}</span>
-              <h3 className="text-sm sm:text-base font-extrabold leading-tight">{card.title}</h3>
-              <p className={`text-[11px] font-semibold leading-tight ${card.id === 'emergency' ? 'text-[#B91C1C] font-bold uppercase' : 'text-gray-600'}`}>
-                {card.description}
-              </p>
-            </button>
-          ))}
+                <div>
+                  <p className="font-bold text-sm text-slate-800 leading-tight">{label}</p>
+                  <p className={`text-[11px] font-medium mt-0.5 leading-snug ${color === 'red' ? 'text-red-700' : 'text-slate-500'}`}>
+                    {desc}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {/* System Accessibility & Barangay Status Section */}
-      <section 
-        aria-label="System Information and Status"
-        className="bg-white border-2 border-slate-200 rounded-3xl p-4 sm:p-6 space-y-4 max-w-6xl mx-auto shadow-sm"
-      >
-        <div className="flex items-center justify-between flex-wrap gap-3 border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-7 h-7 text-[#1E3A8A] shrink-0" />
+      {/* ── Status + Report Row ──────────────────────────────────────────── */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {/* Status card */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-[#1E3A8A]" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-slate-800">Sta. Rita Accessibility Status</p>
+                <p className="text-xs text-slate-400">Live infrastructure monitoring</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+              Live
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { value: '12',   label: 'Verified Ramps',    color: 'text-[#1E3A8A]' },
+              { value: '100%', label: 'Step-Free Routes',  color: 'text-emerald-700' },
+              { value: '3',    label: 'Active Reports',    color: 'text-amber-600' },
+              { value: '24/7', label: 'Voice Guidance',    color: 'text-purple-700' },
+            ].map(({ value, label, color }) => (
+              <div key={label} className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                <p className={`text-xl font-black ${color}`}>{value}</p>
+                <p className="text-[10px] font-semibold text-slate-500 mt-0.5 uppercase tracking-wide leading-tight">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Report barrier card */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col justify-between shadow-sm">
+          <div className="flex items-start gap-2.5 mb-4">
+            <AlertOctagon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-lg font-extrabold text-[#111827]">
-                Barangay Sta. Rita Accessibility Status
-              </h3>
-              <p className="text-xs text-[#4B5563] font-medium">
-                Live Community Infrastructure & Route Condition Monitoring
+              <p className="font-bold text-sm text-slate-800 leading-snug">Spotted a barrier?</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-snug">
+                Report broken ramps, blocked pathways, or accessibility issues in Sta. Rita.
               </p>
             </div>
           </div>
-
-          <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1 rounded-full text-xs font-extrabold">
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
-            System Live & Verified
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div className="p-3.5 bg-[#F3F4F6] rounded-2xl border border-slate-200">
-            <p className="text-2xl font-black text-[#1E3A8A]">12</p>
-            <p className="text-[11px] font-bold text-[#4B5563] mt-0.5 uppercase">Verified Ramps</p>
-          </div>
-          <div className="p-3.5 bg-[#F3F4F6] rounded-2xl border border-slate-200">
-            <p className="text-2xl font-black text-emerald-700">100%</p>
-            <p className="text-[11px] font-bold text-[#4B5563] mt-0.5 uppercase">Step-Free Routes</p>
-          </div>
-          <div className="p-3.5 bg-[#F3F4F6] rounded-2xl border border-slate-200">
-            <p className="text-2xl font-black text-[#F59E0B]">3</p>
-            <p className="text-[11px] font-bold text-[#4B5563] mt-0.5 uppercase">Reported Obstacles</p>
-          </div>
-          <div className="p-3.5 bg-[#F3F4F6] rounded-2xl border border-slate-200">
-            <p className="text-2xl font-black text-purple-700">24/7</p>
-            <p className="text-[11px] font-bold text-[#4B5563] mt-0.5 uppercase">AI Voice Guidance</p>
-          </div>
-        </div>
-
-        {/* Quick Report Barrier Trigger */}
-        <div className="bg-[#F3F4F6] border-2 border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 text-[#111827]">
-            <AlertOctagon className="w-5 h-5 text-[#F59E0B] shrink-0" />
-            <p className="text-xs sm:text-sm font-semibold">
-              Encountered a broken sidewalk, blocked ramp, or obstacle in Sta. Rita?
-            </p>
-          </div>
           <button
-            onClick={() => handleAction('report_issue', 'Opening Report Accessibility Issue form.')}
-            className="px-5 py-2.5 bg-[#1E3A8A] hover:bg-blue-900 text-white font-bold rounded-xl text-xs uppercase tracking-wider shrink-0 transition-colors focus:ring-4 focus:ring-blue-300 focus:outline-none cursor-pointer"
+            onClick={() => go('report_issue', 'Opening Report Accessibility Issue form.')}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1E3A8A] hover:bg-blue-800 text-white font-bold rounded-lg text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
+            <Flag className="w-4 h-4" />
             Report Issue
           </button>
         </div>
-      </section>
 
+      </section>
     </div>
   );
 };

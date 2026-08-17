@@ -1,475 +1,401 @@
 import React, { useState, useEffect } from 'react';
 import { useAccessibility } from '../context/AccessibilityContext';
+import { useAuth } from '../context/AuthContext';
 import { PWDProfile, DisabilityType, MobilityAid, AccessibilityPreference } from '../types';
-import { 
-  Settings, 
-  Type, 
-  Eye, 
-  Mic, 
-  Compass, 
-  Globe, 
-  Sparkles, 
-  Save, 
-  UserCheck, 
-  HeartHandshake, 
-  Check 
+import {
+  Type, Eye, Mic, Globe, Save, UserCheck,
+  Check, ChevronDown, ShieldCheck,
 } from 'lucide-react';
 
+/* ─────────────────────────────────────────────── helpers ── */
+const Pill: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ active, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+      active
+        ? 'bg-[#1E3A8A] text-white border-blue-700'
+        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+    }`}
+  >
+    {active && <Check className="w-3 h-3 shrink-0" />}
+    {children}
+  </button>
+);
+
+const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
+  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 bg-slate-50">
+      <span className="text-[#1E3A8A]">{icon}</span>
+      <h2 className="text-sm font-bold text-slate-800">{title}</h2>
+    </div>
+    <div className="p-5 space-y-4">{children}</div>
+  </div>
+);
+
+const FieldLabel: React.FC<{ htmlFor?: string; children: React.ReactNode }> = ({ htmlFor, children }) => (
+  <label htmlFor={htmlFor} className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+    {children}
+  </label>
+);
+
+const TextInput: React.FC<{
+  id?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}> = ({ id, value, onChange, placeholder, type = 'text' }) => (
+  <input
+    id={id}
+    type={type}
+    value={value}
+    onChange={e => onChange(e.target.value)}
+    placeholder={placeholder}
+    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#1E3A8A] hover:border-slate-300 transition-colors"
+  />
+);
+
+const ToggleRow: React.FC<{
+  label: string;
+  description?: string;
+  active: boolean;
+  onClick: () => void;
+  activeColor?: string;
+}> = ({ label, description, active, onClick, activeColor = 'bg-[#1E3A8A] text-white border-blue-700' }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 text-left ${
+      active ? activeColor : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+    }`}
+  >
+    <span className="flex flex-col gap-0.5">
+      <span>{label}</span>
+      {description && <span className={`text-xs font-normal ${active ? 'text-blue-200' : 'text-slate-400'}`}>{description}</span>}
+    </span>
+    <span className={`text-xs font-black px-2 py-0.5 rounded ${active ? 'bg-white/20' : 'bg-slate-200 text-slate-600'}`}>
+      {active ? 'ON' : 'OFF'}
+    </span>
+  </button>
+);
+/* ──────────────────────────────────────────────────────────── */
+
 export const AccessibilitySettingsPage: React.FC = () => {
-  const { settings, updateSettings, profile, updateProfile, speak, announceToScreenReader } = useAccessibility();
+  const { settings, updateSettings, profile, updateProfile, speak } = useAccessibility();
+  const { currentUser } = useAuth();
 
-  const [profileForm, setProfileForm] = useState<PWDProfile>(profile);
+  const [form, setForm] = useState<PWDProfile>(profile);
+  const [saved, setSaved] = useState(false);
 
-  // Keep form in sync if context profile changes (e.g. loaded from localStorage after mount)
-  useEffect(() => {
-    setProfileForm(profile);
-  }, [profile]);
+  useEffect(() => { setForm(profile); }, [profile]);
 
-  const [profileSavedSuccess, setProfileSavedSuccess] = useState<boolean>(false);
-
-  const handleProfileSave = (e: React.FormEvent) => {
+  const saveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(profileForm);
-    setProfileSavedSuccess(true);
-    speak('PWD Profile saved successfully.');
-    setTimeout(() => setProfileSavedSuccess(false), 4000);
+    updateProfile(form);
+    setSaved(true);
+    speak('Profile saved.');
+    setTimeout(() => setSaved(false), 3500);
   };
 
-  const togglePreference = (pref: AccessibilityPreference) => {
-    setProfileForm(prev => {
-      const exists = prev.preferences.includes(pref);
-      return {
-        ...prev,
-        preferences: exists
-          ? prev.preferences.filter(p => p !== pref)
-          : [...prev.preferences, pref]
-      };
-    });
-  };
+  const toggleMobilityAid = (aid: MobilityAid) =>
+    setForm(p => ({
+      ...p,
+      mobilityAids: p.mobilityAids.includes(aid)
+        ? p.mobilityAids.filter(a => a !== aid)
+        : [...p.mobilityAids, aid],
+    }));
 
-  const toggleMobilityAid = (aid: MobilityAid) => {
-    setProfileForm(prev => {
-      const exists = prev.mobilityAids.includes(aid);
-      return {
-        ...prev,
-        mobilityAids: exists ? prev.mobilityAids.filter(a => a !== aid) : [...prev.mobilityAids, aid]
-      };
-    });
-  };
+  const togglePref = (pref: AccessibilityPreference) =>
+    setForm(p => ({
+      ...p,
+      preferences: p.preferences.includes(pref)
+        ? p.preferences.filter(x => x !== pref)
+        : [...p.preferences, pref],
+    }));
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6 space-y-6 lg:space-y-8">
-      
-      {/* Header */}
-      <div className="border-b-2 border-slate-200 pb-4">
-        <div className="inline-flex items-center gap-2 bg-slate-800 text-white px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-          ⚙️ Personalization
+    <div className="max-w-screen-xl mx-auto px-5 lg:px-8 py-5">
+
+      {/* Page header — tight */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-4 h-4 text-[#1E3A8A]" />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 font-heading">
-          Accessibility Settings
-        </h1>
-        <p className="text-base text-slate-600 font-medium mt-1">
-          Customize font text scaling, high-contrast themes, voice guidance, and your PWD Profile declaration.
-        </p>
-      </div>
-
-      {/* 1. Display & Visual Accessibility Controls */}
-      <div className="bg-white border-2 border-slate-300 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-        <h2 className="text-xl font-extrabold text-slate-900 font-heading flex items-center gap-2">
-          <Type className="w-6 h-6 text-blue-600" />
-          <span>Text Size & Display Scaling</span>
-        </h2>
-
-        {/* Text Size Selectors */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-slate-700">
-            Text Size (Scales entire web app interface):
-          </label>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { id: 'small', label: 'Small (14px)' },
-              { id: 'medium', label: 'Medium (16px)' },
-              { id: 'large', label: 'Large (19px)' },
-              { id: 'xlarge', label: 'Extra Large (22px)' },
-            ].map(ts => {
-              const isSelected = settings.textSize === ts.id;
-              return (
-                <button
-                  key={ts.id}
-                  type="button"
-                  onClick={() => {
-                    updateSettings({ textSize: ts.id as any });
-                    speak(`Text size changed to ${ts.label}.`);
-                  }}
-                  className={`p-4 rounded-2xl border-2 font-extrabold text-sm transition-all focus:ring-4 focus:ring-blue-300 focus:outline-none ${
-                    isSelected
-                      ? 'bg-blue-600 text-white border-blue-400 shadow-md'
-                      : 'bg-slate-50 text-slate-900 border-slate-300 hover:bg-slate-100'
-                  }`}
-                >
-                  {ts.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* High Contrast Mode */}
-        <div className="space-y-2 pt-2 border-t border-slate-200">
-          <label className="block text-sm font-bold text-slate-700">
-            Color Contrast Mode:
-          </label>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { id: 'standard', label: 'Standard Accessible Light', desc: 'High WCAG AA contrast' },
-              { id: 'high_contrast', label: 'High Contrast Mode', desc: 'Maximum dark & light contrast' },
-              { id: 'yellow_black', label: 'Yellow & Black', desc: 'High visibility for visual impairments' },
-            ].map(cm => {
-              const isSelected = settings.contrastMode === cm.id;
-              return (
-                <button
-                  key={cm.id}
-                  type="button"
-                  onClick={() => {
-                    updateSettings({ contrastMode: cm.id as any });
-                    speak(`Contrast mode set to ${cm.label}.`);
-                  }}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all focus:ring-4 focus:ring-blue-300 focus:outline-none ${
-                    isSelected
-                      ? 'bg-blue-600 text-white border-blue-400 shadow-md'
-                      : 'bg-slate-50 text-slate-900 border-slate-300 hover:bg-slate-100'
-                  }`}
-                >
-                  <p className="font-extrabold text-sm font-heading">{cm.label}</p>
-                  <p className={`text-xs mt-1 ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>{cm.desc}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Reduced Motion & Language */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-200">
-          
-          {/* Language Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700 flex items-center gap-2">
-              <Globe className="w-4 h-4 text-blue-600" />
-              Language Preference:
-            </label>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  updateSettings({ language: 'en' });
-                  speak('Language set to English.');
-                }}
-                className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm ${
-                  settings.language === 'en' ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300'
-                }`}
-              >
-                English
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  updateSettings({ language: 'fil' });
-                  speak('Wika nakaset sa Filipino Tagalog.');
-                }}
-                className={`flex-1 p-3 rounded-xl border-2 font-bold text-sm ${
-                  settings.language === 'fil' ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300'
-                }`}
-              >
-                Filipino (Tagalog)
-              </button>
-            </div>
-          </div>
-
-          {/* Reduced Motion Toggle */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700">
-              Animation & Reduced Motion:
-            </label>
-
-            <button
-              type="button"
-              onClick={() => {
-                const nextMotion = !settings.reducedMotion;
-                updateSettings({ reducedMotion: nextMotion });
-                speak(`Reduced motion ${nextMotion ? 'enabled' : 'disabled'}.`);
-              }}
-              className={`w-full p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-between ${
-                settings.reducedMotion ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300'
-              }`}
-            >
-              <span>Reduce Interface Motion & Animations</span>
-              <span>{settings.reducedMotion ? 'ON' : 'OFF'}</span>
-            </button>
-          </div>
-
+        <div>
+          <h1 className="text-lg font-black text-slate-900">Accessibility Settings</h1>
+          <p className="text-xs text-slate-500">Display, voice & PWD profile preferences</p>
         </div>
       </div>
 
-      {/* 2. Voice Guidance Settings */}
-      <div className="bg-white border-2 border-slate-300 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-        <h2 className="text-xl font-extrabold text-slate-900 font-heading flex items-center gap-2">
-          <Mic className="w-6 h-6 text-amber-600" />
-          <span>AI Voice Guidance & Audio Settings</span>
-        </h2>
+      {/* Two-column desktop layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          
-          {/* Voice Guidance On/Off */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700">
-              Voice Guidance System:
-            </label>
+        {/* ── Left column (settings controls) ── */}
+        <div className="lg:col-span-2 space-y-4">
 
-            <button
-              type="button"
-              onClick={() => {
-                const nextVoice = !settings.voiceGuidanceEnabled;
-                updateSettings({ voiceGuidanceEnabled: nextVoice });
-                speak(`Voice guidance ${nextVoice ? 'enabled' : 'disabled'}.`);
-              }}
-              className={`w-full p-4 rounded-2xl border-2 font-bold text-base flex items-center justify-between ${
-                settings.voiceGuidanceEnabled ? 'bg-amber-500 text-slate-950 border-amber-300' : 'bg-slate-100 text-slate-800 border-slate-300'
-              }`}
-            >
-              <span>Enable Spoken Voice Instructions</span>
-              <span className="font-extrabold">{settings.voiceGuidanceEnabled ? 'ENABLED' : 'DISABLED'}</span>
-            </button>
-          </div>
-
-          {/* Voice Speed */}
-          <div className="space-y-2">
-            <label className="block text-sm font-bold text-slate-700">
-              Spoken Voice Speed:
-            </label>
-
-            <div className="flex gap-2">
-              {[
-                { id: 'slow', label: 'Slow (0.7x)' },
-                { id: 'normal', label: 'Normal (1.0x)' },
-                { id: 'fast', label: 'Fast (1.2x)' },
-              ].map(sp => {
-                const isSelected = settings.voiceSpeed === sp.id;
-                return (
-                  <button
-                    key={sp.id}
-                    type="button"
-                    onClick={() => {
-                      updateSettings({ voiceSpeed: sp.id as any });
-                      speak(`Voice speed set to ${sp.label}.`);
-                    }}
-                    className={`flex-1 p-3 rounded-xl border-2 font-bold text-xs ${
-                      isSelected ? 'bg-amber-500 text-slate-950 border-amber-300' : 'bg-slate-50 text-slate-900 border-slate-300'
-                    }`}
-                  >
-                    {sp.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* 3. PWD Profile Declaration Form */}
-      <div className="bg-white border-2 border-slate-300 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-          <UserCheck className="w-7 h-7 text-blue-600 shrink-0" />
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 font-heading">
-              PWD Profile Declaration
-            </h2>
-            <p className="text-xs text-slate-600 font-medium">
-              Information is stored locally on your device to tailor route planning and emergency contacts.
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleProfileSave} className="space-y-6">
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Full Name:
-              </label>
-              <input
-                type="text"
-                value={profileForm.fullName}
-                onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Olongapo City PWD ID Number:
-              </label>
-              <input
-                type="text"
-                value={profileForm.pwdIdNumber}
-                onChange={(e) => setProfileForm({ ...profileForm, pwdIdNumber: e.target.value })}
-                placeholder="OCPWD-XXXX-XXXX"
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Primary Disability Type:
-              </label>
-              <select
-                value={profileForm.disabilityType}
-                onChange={(e) => setProfileForm({ ...profileForm, disabilityType: e.target.value as DisabilityType })}
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
-              >
-                <option value="wheelchair">Wheelchair User / Mobility Impaired</option>
-                <option value="mobility">Physical / Mobility Impairment</option>
-                <option value="visual">Visual Impairment / Blindness</option>
-                <option value="hearing">Hearing Impairment / Deafness</option>
-                <option value="cognitive">Cognitive / Learning Difficulty</option>
-                <option value="senior">Senior Citizen with Mobility Needs</option>
-                <option value="multiple">Multiple Disabilities</option>
-                <option value="caregiver">Caregiver / Family Member</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Barangay Sta. Rita Zone:
-              </label>
-              <input
-                type="text"
-                value={profileForm.barangayZone}
-                onChange={(e) => setProfileForm({ ...profileForm, barangayZone: e.target.value })}
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Mobility Aids Checklist */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Mobility Aids Used:
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'manual_wheelchair', label: '🦽 Manual Wheelchair' },
-                { id: 'power_wheelchair', label: '⚡ Power Wheelchair' },
-                { id: 'crutches', label: '🩼 Crutches' },
-                { id: 'white_cane', label: '🦯 White Cane' },
-                { id: 'walker', label: '🚶 Walker' },
-                { id: 'guide_dog', label: '🦮 Guide Dog' },
-              ].map(aid => {
-                const isChecked = profileForm.mobilityAids.includes(aid.id as MobilityAid);
-                return (
-                  <button
-                    key={aid.id}
-                    type="button"
-                    onClick={() => toggleMobilityAid(aid.id as MobilityAid)}
-                    className={`px-3.5 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                      isChecked ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300'
-                    }`}
-                  >
-                    {aid.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Accessibility Preferences */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Route Accessibility Preferences:
-            </label>
-            <div className="flex flex-wrap gap-2">
+          {/* Text Size */}
+          <SectionCard title="Text Size" icon={<Type className="w-4 h-4" />}>
+            <div className="grid grid-cols-2 gap-2">
               {([
-                { id: 'wheelchair_accessible', label: '♿ Wheelchair Accessible' },
-                { id: 'avoid_stairs', label: '🚫 Avoid Stairs' },
-                { id: 'avoid_steep_slopes', label: '⛰️ Avoid Steep Slopes' },
-                { id: 'smooth_pathways', label: '🛤️ Smooth Pathways' },
-                { id: 'accessible_crossings', label: '🚦 Accessible Crossings' },
-                { id: 'rest_stops_frequent', label: '🪑 Frequent Rest Stops' },
-                { id: 'shaded_paths', label: '🌳 Shaded Paths' },
-                { id: 'shortest', label: '📏 Shortest Route' },
-                { id: 'safest', label: '🛡️ Safest Route' },
-                { id: 'least_difficult', label: '✅ Least Difficult' },
-              ] as { id: AccessibilityPreference; label: string }[]).map(pref => {
-                const isChecked = profileForm.preferences.includes(pref.id);
+                { id: 'small',  label: 'Small',      sub: '14px' },
+                { id: 'medium', label: 'Medium',     sub: '16px' },
+                { id: 'large',  label: 'Large',      sub: '19px' },
+                { id: 'xlarge', label: 'Extra Large', sub: '22px' },
+              ] as const).map(ts => {
+                const isActive = settings.textSize === ts.id;
                 return (
                   <button
-                    key={pref.id}
-                    type="button"
-                    onClick={() => togglePreference(pref.id)}
-                    className={`px-3.5 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                      isChecked ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300 hover:bg-slate-100'
+                    key={ts.id}
+                    onClick={() => { updateSettings({ textSize: ts.id }); speak(`Text size: ${ts.label}.`); }}
+                    className={`p-2.5 rounded-lg border text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                      isActive ? 'bg-[#1E3A8A] text-white border-blue-700' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                     }`}
                   >
-                    {pref.label}
+                    <p className="font-bold text-sm">{ts.label}</p>
+                    <p className={`text-xs ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>{ts.sub}</p>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </SectionCard>
 
-          {/* Emergency Contact */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Emergency Contact Person Name:
-              </label>
-              <input
-                type="text"
-                value={profileForm.emergencyContactName}
-                onChange={(e) => setProfileForm({ ...profileForm, emergencyContactName: e.target.value })}
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+          {/* Contrast Mode */}
+          <SectionCard title="Colour Contrast" icon={<Eye className="w-4 h-4" />}>
+            <div className="space-y-2">
+              {([
+                { id: 'standard',      label: 'Standard Light',      desc: 'WCAG AA — default' },
+                { id: 'high_contrast', label: 'High Contrast Dark',  desc: 'Maximum contrast' },
+                { id: 'yellow_black',  label: 'Yellow & Black',      desc: 'For low vision users' },
+              ] as const).map(cm => {
+                const isActive = settings.contrastMode === cm.id;
+                return (
+                  <button
+                    key={cm.id}
+                    onClick={() => { updateSettings({ contrastMode: cm.id }); speak(`Contrast: ${cm.label}.`); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                      isActive ? 'bg-[#1E3A8A] text-white border-blue-700' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold">{cm.label}</p>
+                      <p className={`text-xs ${isActive ? 'text-blue-200' : 'text-slate-400'}`}>{cm.desc}</p>
+                    </div>
+                    {isActive && <Check className="w-4 h-4 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </SectionCard>
+
+          {/* Voice & Misc */}
+          <SectionCard title="Voice & Display" icon={<Mic className="w-4 h-4" />}>
+            <div className="space-y-2">
+              <ToggleRow
+                label="Voice Guidance"
+                description="Spoken turn-by-turn instructions"
+                active={settings.voiceGuidanceEnabled}
+                onClick={() => {
+                  const next = !settings.voiceGuidanceEnabled;
+                  updateSettings({ voiceGuidanceEnabled: next });
+                  speak(`Voice guidance ${next ? 'on' : 'off'}.`);
+                }}
+                activeColor="bg-amber-500 text-slate-900 border-amber-400"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">
-                Emergency Contact Phone Number:
-              </label>
-              <input
-                type="text"
-                value={profileForm.emergencyContactPhone}
-                onChange={(e) => setProfileForm({ ...profileForm, emergencyContactPhone: e.target.value })}
-                className="w-full p-3.5 bg-slate-50 border-2 border-slate-300 rounded-xl text-base font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+              <ToggleRow
+                label="Reduce Animations"
+                description="Less motion for sensitive users"
+                active={settings.reducedMotion}
+                onClick={() => {
+                  const next = !settings.reducedMotion;
+                  updateSettings({ reducedMotion: next });
+                  speak(`Reduced motion ${next ? 'on' : 'off'}.`);
+                }}
               />
+
+              <div className="pt-1">
+                <FieldLabel>Voice Speed</FieldLabel>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { id: 'slow', label: 'Slow' },
+                    { id: 'normal', label: 'Normal' },
+                    { id: 'fast', label: 'Fast' },
+                  ] as const).map(sp => (
+                    <button
+                      key={sp.id}
+                      onClick={() => { updateSettings({ voiceSpeed: sp.id }); speak(`Speed: ${sp.label}.`); }}
+                      className={`py-2 rounded-lg border text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                        settings.voiceSpeed === sp.id
+                          ? 'bg-amber-500 text-slate-900 border-amber-400'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {sp.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* Save Profile Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-lg rounded-2xl border-2 border-blue-300 flex items-center justify-center gap-2 shadow-lg transition-all focus:ring-4 focus:ring-blue-300 focus:outline-none"
-            >
-              <Save className="w-5 h-5" />
-              <span>SAVE PWD PROFILE DECLARATION</span>
-            </button>
-          </div>
-
-          {profileSavedSuccess && (
-            <div className="p-4 bg-emerald-100 border-2 border-emerald-400 text-emerald-950 font-bold rounded-2xl text-center">
-              ✓ PWD Profile Declaration saved successfully!
+          {/* Language */}
+          <SectionCard title="Language" icon={<Globe className="w-4 h-4" />}>
+            <div className="grid grid-cols-2 gap-2">
+              {(['en', 'fil'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => {
+                    updateSettings({ language: lang });
+                    speak(lang === 'en' ? 'Language: English.' : 'Wika: Filipino.');
+                  }}
+                  className={`py-2.5 rounded-lg border text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                    settings.language === lang
+                      ? 'bg-[#1E3A8A] text-white border-blue-700'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {lang === 'en' ? '🇺🇸 English' : '🇵🇭 Filipino'}
+                </button>
+              ))}
             </div>
-          )}
+          </SectionCard>
 
-        </form>
+        </div>
+
+        {/* ── Right column (PWD Profile) ── */}
+        <div className="lg:col-span-3">
+          <form onSubmit={saveProfile}>
+            <SectionCard title="PWD Profile Declaration" icon={<UserCheck className="w-4 h-4" />}>
+
+              {/* Success banner */}
+              {saved && (
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold">
+                  <Check className="w-4 h-4 shrink-0" />
+                  Profile saved successfully!
+                </div>
+              )}
+
+              {/* Account info row (read-only from auth) */}
+              {currentUser && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center font-black text-sm shrink-0">
+                    {currentUser.fullName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">{currentUser.fullName}</p>
+                    <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
+                  </div>
+                  <span className="ml-auto shrink-0 text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 uppercase tracking-wide">
+                    Logged in
+                  </span>
+                </div>
+              )}
+
+              {/* Grid fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel htmlFor="pf-name">Full Name</FieldLabel>
+                  <TextInput id="pf-name" value={form.fullName} onChange={v => setForm(p => ({ ...p, fullName: v }))} placeholder="Juan dela Cruz" />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pf-pwd">PWD ID Number</FieldLabel>
+                  <TextInput id="pf-pwd" value={form.pwdIdNumber} onChange={v => setForm(p => ({ ...p, pwdIdNumber: v }))} placeholder="OCPWD-XXXX-XXXX" />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pf-type">Disability Type</FieldLabel>
+                  <div className="relative">
+                    <select
+                      id="pf-type"
+                      value={form.disabilityType}
+                      onChange={e => setForm(p => ({ ...p, disabilityType: e.target.value as DisabilityType }))}
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-900 appearance-none focus:outline-none focus:border-[#1E3A8A] hover:border-slate-300 pr-8"
+                    >
+                      <option value="wheelchair">♿ Wheelchair User</option>
+                      <option value="mobility">🦽 Mobility Impairment</option>
+                      <option value="visual">🦯 Visual Impairment</option>
+                      <option value="hearing">👂 Hearing Impairment</option>
+                      <option value="cognitive">🧠 Cognitive Difficulty</option>
+                      <option value="senior">🧓 Senior Citizen</option>
+                      <option value="multiple">⚕️ Multiple Disabilities</option>
+                      <option value="caregiver">🤝 Caregiver</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pf-zone">Barangay Zone</FieldLabel>
+                  <TextInput id="pf-zone" value={form.barangayZone} onChange={v => setForm(p => ({ ...p, barangayZone: v }))} placeholder="e.g. Zone 1" />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pf-ec-name">Emergency Contact Name</FieldLabel>
+                  <TextInput id="pf-ec-name" value={form.emergencyContactName} onChange={v => setForm(p => ({ ...p, emergencyContactName: v }))} placeholder="Contact name" />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="pf-ec-phone">Emergency Contact Phone</FieldLabel>
+                  <TextInput id="pf-ec-phone" value={form.emergencyContactPhone} onChange={v => setForm(p => ({ ...p, emergencyContactPhone: v }))} placeholder="09XX-XXX-XXXX" type="tel" />
+                </div>
+              </div>
+
+              {/* Mobility Aids */}
+              <div>
+                <FieldLabel>Mobility Aids Used</FieldLabel>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { id: 'manual_wheelchair', label: '🦽 Manual Wheelchair' },
+                    { id: 'power_wheelchair',  label: '⚡ Power Wheelchair' },
+                    { id: 'crutches',          label: '🩼 Crutches' },
+                    { id: 'white_cane',        label: '🦯 White Cane' },
+                    { id: 'walker',            label: '🚶 Walker' },
+                    { id: 'guide_dog',         label: '🦮 Guide Dog' },
+                  ] as { id: MobilityAid; label: string }[]).map(a => (
+                    <Pill key={a.id} active={form.mobilityAids.includes(a.id)} onClick={() => toggleMobilityAid(a.id)}>
+                      {a.label}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accessibility Preferences */}
+              <div>
+                <FieldLabel>Route Preferences</FieldLabel>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { id: 'wheelchair_accessible', label: '♿ Wheelchair Accessible' },
+                    { id: 'avoid_stairs',          label: '🚫 Avoid Stairs' },
+                    { id: 'avoid_steep_slopes',    label: '⛰️ Avoid Steep Slopes' },
+                    { id: 'smooth_pathways',       label: '🛤️ Smooth Pathways' },
+                    { id: 'accessible_crossings',  label: '🚦 Accessible Crossings' },
+                    { id: 'rest_stops_frequent',   label: '🪑 Frequent Rest Stops' },
+                    { id: 'shaded_paths',          label: '🌳 Shaded Paths' },
+                    { id: 'shortest',              label: '📏 Shortest Route' },
+                    { id: 'safest',                label: '🛡️ Safest Route' },
+                    { id: 'least_difficult',       label: '✅ Least Difficult' },
+                  ] as { id: AccessibilityPreference; label: string }[]).map(p => (
+                    <Pill key={p.id} active={form.preferences.includes(p.id)} onClick={() => togglePref(p.id)}>
+                      {p.label}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Save button */}
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-[#1E3A8A] hover:bg-blue-800 text-white font-bold text-sm rounded-lg transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 shadow-sm"
+              >
+                <Save className="w-4 h-4" />
+                Save PWD Profile
+              </button>
+
+            </SectionCard>
+          </form>
+        </div>
+
       </div>
-
     </div>
   );
 };
