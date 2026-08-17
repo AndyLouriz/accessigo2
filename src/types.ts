@@ -1,3 +1,11 @@
+export interface User {
+  id: string;
+  fullName: string;
+  email: string;
+  disabilityType: DisabilityType;
+  createdAt: string;
+}
+
 export type DisabilityType = 
   | 'wheelchair' 
   | 'mobility' 

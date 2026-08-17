@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessibilityProvider, useAccessibility } from './context/AccessibilityContext';
+import { AuthPage } from './components/AuthPage';
 import { Navigation } from './components/Navigation';
 import { HomeDashboard } from './components/HomeDashboard';
 import { RoutePlanner } from './components/RoutePlanner';
@@ -242,10 +244,34 @@ const MainAppContent: React.FC = () => {
   );
 };
 
-export default function App() {
+
+// ─── Auth-Gated App Shell ─────────────────────────────────────────────────────
+const AuthenticatedApp: React.FC = () => {
+  const { isAuthenticated, isLoading, currentUser } = useAuth();
+
+  if (isLoading) return null; // AuthPage handles the loading spinner
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
+  // Build initial profile from the logged-in user's signup data
+  const initialProfile = currentUser ? {
+    fullName: currentUser.fullName,
+    disabilityType: currentUser.disabilityType as any,
+  } : undefined;
+
   return (
-    <AccessibilityProvider>
+    <AccessibilityProvider initialProfile={initialProfile}>
       <MainAppContent />
     </AccessibilityProvider>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
   );
 }

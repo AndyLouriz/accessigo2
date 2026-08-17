@@ -4,7 +4,7 @@ import { AccessibilitySettings, PWDProfile, TextSizeOption, ContrastModeOption, 
 interface AccessibilityContextType {
   settings: AccessibilitySettings;
   updateSettings: (newSettings: Partial<AccessibilitySettings>) => void;
-  profile: PWDProfile | null;
+  profile: PWDProfile;
   updateProfile: (profile: PWDProfile) => void;
   speak: (text: string, onEnd?: () => void) => void;
   stopSpeaking: () => void;
@@ -42,15 +42,17 @@ const defaultProfile: PWDProfile = {
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
 
-export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AccessibilityProvider: React.FC<{ children: React.ReactNode; initialProfile?: Partial<PWDProfile> }> = ({ children, initialProfile }) => {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     const saved = localStorage.getItem('accessigo_settings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
 
-  const [profile, setProfile] = useState<PWDProfile | null>(() => {
+  const [profile, setProfile] = useState<PWDProfile>(() => {
     const saved = localStorage.getItem('accessigo_pwd_profile');
-    return saved ? JSON.parse(saved) : defaultProfile;
+    const base = saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
+    // Merge signup data (name, disabilityType) into profile on first load
+    return initialProfile ? { ...base, ...initialProfile } : base;
   });
 
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);

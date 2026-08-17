@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccessibility } from '../context/AccessibilityContext';
 import { PWDProfile, DisabilityType, MobilityAid, AccessibilityPreference } from '../types';
 import { 
@@ -18,17 +18,12 @@ import {
 export const AccessibilitySettingsPage: React.FC = () => {
   const { settings, updateSettings, profile, updateProfile, speak, announceToScreenReader } = useAccessibility();
 
-  const [profileForm, setProfileForm] = useState<PWDProfile>(profile || {
-    fullName: 'Juan dela Cruz',
-    pwdIdNumber: 'OCPWD-2024-08912',
-    disabilityType: 'wheelchair',
-    mobilityAids: ['manual_wheelchair'],
-    preferences: ['wheelchair_accessible', 'avoid_stairs', 'smooth_pathways'],
-    emergencyContactName: 'Maria dela Cruz',
-    emergencyContactPhone: '0917-123-4567',
-    barangayZone: 'Zone 1, Sta. Rita',
-    medicalNotes: ''
-  });
+  const [profileForm, setProfileForm] = useState<PWDProfile>(profile);
+
+  // Keep form in sync if context profile changes (e.g. loaded from localStorage after mount)
+  useEffect(() => {
+    setProfileForm(profile);
+  }, [profile]);
 
   const [profileSavedSuccess, setProfileSavedSuccess] = useState<boolean>(false);
 
@@ -38,6 +33,18 @@ export const AccessibilitySettingsPage: React.FC = () => {
     setProfileSavedSuccess(true);
     speak('PWD Profile saved successfully.');
     setTimeout(() => setProfileSavedSuccess(false), 4000);
+  };
+
+  const togglePreference = (pref: AccessibilityPreference) => {
+    setProfileForm(prev => {
+      const exists = prev.preferences.includes(pref);
+      return {
+        ...prev,
+        preferences: exists
+          ? prev.preferences.filter(p => p !== pref)
+          : [...prev.preferences, pref]
+      };
+    });
   };
 
   const toggleMobilityAid = (aid: MobilityAid) => {
@@ -375,6 +382,41 @@ export const AccessibilitySettingsPage: React.FC = () => {
                     }`}
                   >
                     {aid.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Accessibility Preferences */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Route Accessibility Preferences:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: 'wheelchair_accessible', label: '♿ Wheelchair Accessible' },
+                { id: 'avoid_stairs', label: '🚫 Avoid Stairs' },
+                { id: 'avoid_steep_slopes', label: '⛰️ Avoid Steep Slopes' },
+                { id: 'smooth_pathways', label: '🛤️ Smooth Pathways' },
+                { id: 'accessible_crossings', label: '🚦 Accessible Crossings' },
+                { id: 'rest_stops_frequent', label: '🪑 Frequent Rest Stops' },
+                { id: 'shaded_paths', label: '🌳 Shaded Paths' },
+                { id: 'shortest', label: '📏 Shortest Route' },
+                { id: 'safest', label: '🛡️ Safest Route' },
+                { id: 'least_difficult', label: '✅ Least Difficult' },
+              ] as { id: AccessibilityPreference; label: string }[]).map(pref => {
+                const isChecked = profileForm.preferences.includes(pref.id);
+                return (
+                  <button
+                    key={pref.id}
+                    type="button"
+                    onClick={() => togglePreference(pref.id)}
+                    className={`px-3.5 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
+                      isChecked ? 'bg-blue-600 text-white border-blue-400' : 'bg-slate-50 text-slate-900 border-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    {pref.label}
                   </button>
                 );
               })}

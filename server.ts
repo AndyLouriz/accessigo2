@@ -3,6 +3,9 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 import { STA_RITA_LOCATIONS, SAMPLE_ROUTE_OPTIONS, INITIAL_PROBLEM_REPORTS } from "./src/data/staRitaData";
 import { ProblemReport } from "./src/types";
 import { 
@@ -13,11 +16,29 @@ import {
   isAddressOutsideStaRitaName 
 } from "./src/utils/geofencing";
 
+// ─── Auth Types ───────────────────────────────────────────────────────────────
+interface StoredUser {
+  id: string;
+  fullName: string;
+  email: string;
+  passwordHash: string;
+  disabilityType: string;
+  createdAt: string;
+}
+
+// ─── In-Memory Users Store ────────────────────────────────────────────────────
+const usersStore = new Map<string, StoredUser>(); // keyed by email
+
+const JWT_SECRET = process.env.JWT_SECRET || 'accessigo-sta-rita-fallback-secret';
+const JWT_EXPIRY = '7d';
+const COOKIE_NAME = 'accessigo_token';
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // Initialize Gemini AI Client lazily / securely
   let genAIClient: GoogleGenAI | null = null;
@@ -125,6 +146,125 @@ async function startServer() {
       geofenceEnforced: true,
       boundaryVersion: activeBoundaryConfig.boundaryVersion
     });
+  });
+
+  // ─── Auth Routes ──────────────────────────────────────────────────────────
+
+  // POST /api/auth/signup
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { fullName, email, password, disabilityType } = req.body;
+
+      if (!fullName || !email || !password || !disabilityType) {
+        return res.status(400).json({ error: 'All fields are required.' });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      }
+      const emailLower = email.toLowerCase().trim();
+      if (usersStore.has(emailLower)) {
+        return res.status(409).json({ error: 'An account with this email already exists.' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      const newUser: StoredUser = {
+        id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        fullName: fullName.trim(),
+        email: emailLower,
+        passwordHash,
+        disabilityType,
+        createdAt: new Date().toISOString(),
+      };
+      usersStore.set(emailLower, newUser);
+
+      const token = jwt.sign(
+        { id: newUser.id, email: newUser.email, fullName: newUser.fullName, disabilityType: newUser.disabilityType },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+      );
+
+      res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      return res.status(201).json({
+        user: { id: newUser.id, fullName: newUser.fullName, email: newUser.email, disabilityType: newUser.disabilityType, createdAt: newUser.createdAt }
+      });
+    } catch (err) {
+      console.error('Signup error:', err);
+      return res.status(500).json({ error: 'Server error during signup.' });
+    }
+  });
+
+  // POST /api/auth/login
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required.' });
+      }
+
+      const emailLower = email.toLowerCase().trim();
+      const user = usersStore.get(emailLower);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Invalid email or password.' });
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, fullName: user.fullName, disabilityType: user.disabilityType },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+      );
+
+      res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        user: { id: user.id, fullName: user.fullName, email: user.email, disabilityType: user.disabilityType, createdAt: user.createdAt }
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      return res.status(500).json({ error: 'Server error during login.' });
+    }
+  });
+
+  // POST /api/auth/logout
+  app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax' });
+    return res.json({ success: true });
+  });
+
+  // GET /api/auth/me  — restore session from cookie
+  app.get('/api/auth/me', (req, res) => {
+    const token = (req as any).cookies?.[COOKIE_NAME];
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated.' });
+    }
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as any;
+      const user = usersStore.get(payload.email);
+      if (!user) {
+        // Token valid but user no longer in memory (server restarted)
+        res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax' });
+        return res.status(401).json({ error: 'Session expired. Please log in again.' });
+      }
+      return res.json({
+        user: { id: user.id, fullName: user.fullName, email: user.email, disabilityType: user.disabilityType, createdAt: user.createdAt }
+      });
+    } catch {
+      res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax' });
+      return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
   });
 
   // Admin Geographic Boundary Configuration API
