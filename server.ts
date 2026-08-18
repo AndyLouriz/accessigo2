@@ -35,7 +35,7 @@ const COOKIE_NAME = 'accessigo_token';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = parseInt(process.env.PORT || '3000', 10);
 
   app.use(express.json());
   app.use(cookieParser());
@@ -921,7 +921,9 @@ Rules for response:
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AccessiGo Server running on http://0.0.0.0:${PORT}`);
+    console.log(`\n🚀 AccessiGo Server running on http://0.0.0.0:${PORT}`);
+    console.log(`   Service Area: Barangay Santa Rita, Olongapo City`);
+    console.log(`   ⚠  Note: Users/routes/reports are stored in-memory and will reset on server restart.\n`);
   });
 }
 

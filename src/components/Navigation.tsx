@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useAccessibility } from '../context/AccessibilityContext';
 import {
@@ -10,6 +10,19 @@ export const Navigation: React.FC = () => {
   const { activeSection, setActiveSection, settings, updateSettings, speak, announceToScreenReader } = useAccessibility();
   const { currentUser, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Close mobile menu when user clicks/taps outside the header
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [mobileMenuOpen]);
 
   const handleNavClick = (sectionId: string, label: string) => {
     setActiveSection(sectionId);
@@ -52,7 +65,7 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
+      <header ref={headerRef} className="sticky top-0 z-40 bg-white border-b-2 border-slate-200 shadow-sm">
         <div className="max-w-screen-xl mx-auto px-4 lg:px-6 flex items-center h-14 gap-3">
 
           {/* Brand */}
@@ -168,9 +181,10 @@ export const Navigation: React.FC = () => {
 
             {/* Mobile hamburger */}
             <button
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 focus:outline-none"
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg"
               onClick={() => setMobileMenuOpen(o => !o)}
-              aria-label="Toggle menu"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>

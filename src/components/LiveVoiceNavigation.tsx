@@ -89,10 +89,8 @@ export const LiveVoiceNavigation: React.FC<LiveVoiceNavigationProps> = ({ active
         : currentStep.instruction;
       speak(textToSpeak);
     }
-    // NOTE: 'speak' is intentionally omitted from deps — it's stable from context
-    // and re-registering on every context render would cause infinite loops.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStepIndex, isNavPaused, settings.language]);
+    // speak is now memoized with useCallback, safe to include in deps
+  }, [currentStepIndex, isNavPaused, settings.language, speak]);
 
   const handleNextStep = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -358,7 +356,7 @@ export const LiveVoiceNavigation: React.FC<LiveVoiceNavigationProps> = ({ active
           {[
             'Where is the nearest accessible restroom?',
             'Is there a ramp at Sta. Rita Barangay Hall?',
-            'Are there accessible tricylces available?',
+            'Are there accessible tricycles available?',
             'Ano ang mga PWD rights sa Olongapo?'
           ].map((q, i) => (
             <button

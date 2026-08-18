@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AccessibilitySettings, PWDProfile, TextSizeOption, ContrastModeOption, LanguageOption, VoiceSpeedOption } from '../types';
 
 interface AccessibilityContextType {
@@ -44,15 +44,22 @@ const AccessibilityContext = createContext<AccessibilityContextType | undefined>
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode; initialProfile?: Partial<PWDProfile> }> = ({ children, initialProfile }) => {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
-    const saved = localStorage.getItem('accessigo_settings');
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    try {
+      const saved = localStorage.getItem('accessigo_settings');
+      return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    } catch {
+      return defaultSettings;
+    }
   });
 
   const [profile, setProfile] = useState<PWDProfile>(() => {
-    const saved = localStorage.getItem('accessigo_pwd_profile');
-    const base = saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
-    // Merge signup data (name, disabilityType) into profile on first load
-    return initialProfile ? { ...base, ...initialProfile } : base;
+    try {
+      const saved = localStorage.getItem('accessigo_pwd_profile');
+      const base = saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
+      return initialProfile ? { ...base, ...initialProfile } : base;
+    } catch {
+      return initialProfile ? { ...defaultProfile, ...initialProfile } : defaultProfile;
+    }
   });
 
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
@@ -112,23 +119,23 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode; initia
     }
   }, [settings]);
 
-  const updateSettings = (newSettings: Partial<AccessibilitySettings>) => {
+  const updateSettings = useCallback((newSettings: Partial<AccessibilitySettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
-  };
+  }, []);
 
-  const updateProfile = (newProfile: PWDProfile) => {
+  const announceToScreenReader = useCallback((message: string) => {
+    setSrAnnouncement(message);
+    setTimeout(() => setSrAnnouncement(null), 3000);
+  }, []);
+
+  const updateProfile = useCallback((newProfile: PWDProfile) => {
     setProfile(newProfile);
     localStorage.setItem('accessigo_pwd_profile', JSON.stringify(newProfile));
     announceToScreenReader('PWD Profile updated successfully.');
-  };
-
-  const announceToScreenReader = (message: string) => {
-    setSrAnnouncement(message);
-    setTimeout(() => setSrAnnouncement(null), 3000);
-  };
+  }, [announceToScreenReader]);
 
   // Speech Synthesis Engine
-  const speak = (text: string, onEnd?: () => void) => {
+  const speak = useCallback((text: string, onEnd?: () => void) => {
     if (!settings.voiceGuidanceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       if (onEnd) onEnd();
       return;
@@ -154,7 +161,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode; initia
 
     // Pick best natural voice if available
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => 
+    const preferredVoice = voices.find(v =>
       v.lang.includes(settings.language === 'fil' ? 'fil' : 'en') ||
       v.lang.includes('PH') ||
       v.lang.includes('US')
@@ -176,15 +183,15 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode; initia
     };
 
     window.speechSynthesis.speak(utterance);
-  };
+  }, [settings.voiceGuidanceEnabled, settings.voiceSpeed, settings.voiceVolume, settings.language]);
 
-  const stopSpeaking = () => {
+  const stopSpeaking = useCallback(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     setIsSpeaking(false);
     setCurrentCaption(null);
-  };
+  }, []);
 
   return (
     <AccessibilityContext.Provider

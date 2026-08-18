@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAccessibility } from '../context/AccessibilityContext';
-import { RouteOption, AccessibilityPreference } from '../types';
+import { RouteOption } from '../types';
 import { RouteMap } from './RouteMap';
 import { 
   CheckCircle2, 

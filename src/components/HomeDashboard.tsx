@@ -6,14 +6,24 @@ import {
   PhoneCall, Flag, ShieldCheck, AlertOctagon, ChevronRight, Rss,
 } from 'lucide-react';
 
-const featureCards = [
+interface FeatureCard {
+  id: string;
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  desc: string;
+  color: CardColor;
+  badge?: string;
+  announce: string;
+}
+
+const featureCards: FeatureCard[] = [
   { id: 'nearby',       icon: MapPin,    label: 'Nearby Places',  desc: 'Clinics, ramps & facilities',    color: 'blue',   announce: 'Opening Nearby Places.' },
   { id: 'saved_routes', icon: Bookmark,  label: 'Saved Routes',   desc: 'Your favourite trips',           color: 'indigo', announce: 'Opening Saved Routes.' },
   { id: 'live_voice',   icon: Mic,       label: 'Voice Guidance', desc: 'AI-powered audio navigation',    color: 'amber',  badge: 'LIVE', announce: 'Opening Voice Guidance.' },
   { id: 'settings',     icon: Settings,  label: 'Settings',       desc: 'Text size, contrast & profile',  color: 'slate',  announce: 'Opening Accessibility Settings.' },
   { id: 'report_issue', icon: Flag,      label: 'Report Barrier', desc: 'Broken ramps or obstacles',      color: 'orange', announce: 'Opening Report Issue.' },
   { id: 'emergency',    icon: PhoneCall, label: 'Emergency Help', desc: 'Contact Barangay Hall',          color: 'red',    announce: 'Opening Emergency Help.' },
-] as const;
+];
 
 type CardColor = 'blue' | 'indigo' | 'amber' | 'slate' | 'orange' | 'red';
 

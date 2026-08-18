@@ -82,14 +82,17 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
 
   const handleSwapLocations = () => {
     if (isCustomMode) {
-      const temp = customOriginInput;
+      // In custom mode: only swap the custom text inputs
+      const tempCustom = customOriginInput;
       setCustomOriginInput(customDestInput);
-      setCustomDestInput(temp);
+      setCustomDestInput(tempCustom);
+    } else {
+      // In dropdown mode: only swap the dropdown backing state
+      const tempSp = startingPoint;
+      setStartingPoint(destination);
+      setDestination(tempSp);
     }
-    const tempSp = startingPoint;
-    setStartingPoint(destination);
-    setDestination(tempSp);
-    speak("Swapped starting point and destination.");
+    speak('Swapped starting point and destination.');
   };
 
   const fetchSavedLocations = async () => {

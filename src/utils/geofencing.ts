@@ -36,19 +36,24 @@ export const STA_RITA_BOUNDARY_CONFIG: BoundaryConfig = {
 export const BARANGAY_STA_RITA_POLYGON = STA_RITA_BOUNDARY_CONFIG.polygon;
 
 /**
- * Checks whether a given [lat, lng] point lies strictly inside Barangay Santa Rita polygon
- * Uses the ray-casting algorithm.
+ * Checks whether a given [lat, lng] point lies strictly inside Barangay Santa Rita polygon.
+ * Uses the ray-casting (point-in-polygon) algorithm.
+ * Polygon vertices are stored as [lat, lng] pairs (index 0 = latitude, index 1 = longitude).
  */
 export function isPointInStaRita(lat: number, lng: number): boolean {
   const poly = BARANGAY_STA_RITA_POLYGON;
   let inside = false;
-  
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i][0], yi = poly[i][1];
-    const xj = poly[j][0], yj = poly[j][1];
 
-    const intersect = ((yi > lng) !== (yj > lng)) &&
-      (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    // lat_i/lat_j = latitude (y), lng_i/lng_j = longitude (x)
+    const lat_i = poly[i][0], lng_i = poly[i][1];
+    const lat_j = poly[j][0], lng_j = poly[j][1];
+
+    // Cast horizontal ray from point rightward; count edge crossings
+    const intersect =
+      (lng_i > lng) !== (lng_j > lng) &&
+      lat < ((lat_j - lat_i) * (lng - lng_i)) / (lng_j - lng_i) + lat_i;
+
     if (intersect) inside = !inside;
   }
   return inside;

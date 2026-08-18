@@ -314,7 +314,7 @@ export const AuthPage: React.FC = () => {
 
                   {/* Disability selector */}
                   <div className="space-y-1.5">
-                    <label htmlFor="signup-disability" className="block text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                    <label htmlFor="signup-disability" className="flex text-sm font-bold text-slate-700 items-center gap-1.5">
                       <Accessibility className="w-4 h-4 text-[#1E3A8A]" />
                       Primary Disability / Role
                     </label>

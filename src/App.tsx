@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessibilityProvider, useAccessibility } from './context/AccessibilityContext';
 import { AuthPage } from './components/AuthPage';
@@ -64,10 +64,16 @@ const MainAppContent: React.FC = () => {
 
   // ── Toast state ──────────────────────────────────────────────────────────
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((message: string, type: 'error' | 'success' | 'info' = 'error') => {
+    // Clear any existing timer so a rapid second call doesn't prematurely dismiss the new toast
+    if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
-    setTimeout(() => setToast(null), 6000);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 6000);
   }, []);
 
   // Handle Calculating Route from Planner
@@ -91,8 +97,13 @@ const MainAppContent: React.FC = () => {
         setActiveSection('route_results');
         speak(`Route calculated from ${origin} to ${destination}. Review route options.`);
       } else {
-        const errData = await response.json();
-        const msg = errData.message || errData.error || "Location outside service area. AccessiGo currently provides accessible route planning only within Barangay Santa Rita, Olongapo City.";
+        let msg = "Location outside service area. AccessiGo currently provides accessible route planning only within Barangay Santa Rita, Olongapo City.";
+        try {
+          const errData = await response.json();
+          msg = errData.message || errData.error || msg;
+        } catch {
+          // Server returned non-JSON (e.g. HTML error page) — use fallback message
+        }
         showToast(`✕ AccessiGo Service Area Limit: ${msg}`, 'error');
         speak(`Route calculation failed. ${msg}`);
       }
