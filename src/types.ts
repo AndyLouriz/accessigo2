@@ -40,13 +40,10 @@ export type AccessibilityPreference =
 
 export interface PWDProfile {
   fullName: string;
-  pwdIdNumber: string;
-  disabilityType: DisabilityType;
   mobilityAids: MobilityAid[];
   preferences: AccessibilityPreference[];
   emergencyContactName: string;
   emergencyContactPhone: string;
-  barangayZone: string;
   medicalNotes?: string;
 }
 

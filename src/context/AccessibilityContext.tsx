@@ -30,13 +30,10 @@ const defaultSettings: AccessibilitySettings = {
 
 const defaultProfile: PWDProfile = {
   fullName: 'Juan dela Cruz',
-  pwdIdNumber: 'OCPWD-2024-08912',
-  disabilityType: 'wheelchair',
   mobilityAids: ['manual_wheelchair'],
   preferences: ['wheelchair_accessible', 'avoid_stairs', 'smooth_pathways'],
   emergencyContactName: 'Maria dela Cruz',
   emergencyContactPhone: '0917-123-4567',
-  barangayZone: 'Zone 1, Sta. Rita',
   medicalNotes: 'Requires step-free ramp access and frequent resting stops.'
 };
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAccessibility } from '../context/AccessibilityContext';
 import { useAuth } from '../context/AuthContext';
-import { PWDProfile, DisabilityType, MobilityAid, AccessibilityPreference } from '../types';
+import { PWDProfile, MobilityAid, AccessibilityPreference } from '../types';
 import {
   Type, Eye, Mic, Globe, Save, UserCheck,
-  Check, ChevronDown, ShieldCheck,
+  Check, ShieldCheck,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────── helpers ── */
@@ -297,38 +297,9 @@ export const AccessibilitySettingsPage: React.FC = () => {
 
               {/* Grid fields */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="col-span-2">
                   <FieldLabel htmlFor="pf-name">Full Name</FieldLabel>
                   <TextInput id="pf-name" value={form.fullName} onChange={v => setForm(p => ({ ...p, fullName: v }))} placeholder="Juan dela Cruz" />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="pf-pwd">PWD ID Number</FieldLabel>
-                  <TextInput id="pf-pwd" value={form.pwdIdNumber} onChange={v => setForm(p => ({ ...p, pwdIdNumber: v }))} placeholder="OCPWD-XXXX-XXXX" />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="pf-type">Disability Type</FieldLabel>
-                  <div className="relative">
-                    <select
-                      id="pf-type"
-                      value={form.disabilityType}
-                      onChange={e => setForm(p => ({ ...p, disabilityType: e.target.value as DisabilityType }))}
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-900 appearance-none focus:outline-none focus:border-[#1E3A8A] hover:border-slate-300 pr-8"
-                    >
-                      <option value="wheelchair">♿ Wheelchair User</option>
-                      <option value="mobility">🦽 Mobility Impairment</option>
-                      <option value="visual">🦯 Visual Impairment</option>
-                      <option value="hearing">👂 Hearing Impairment</option>
-                      <option value="cognitive">🧠 Cognitive Difficulty</option>
-                      <option value="senior">🧓 Senior Citizen</option>
-                      <option value="multiple">⚕️ Multiple Disabilities</option>
-                      <option value="caregiver">🤝 Caregiver</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel htmlFor="pf-zone">Barangay Zone</FieldLabel>
-                  <TextInput id="pf-zone" value={form.barangayZone} onChange={v => setForm(p => ({ ...p, barangayZone: v }))} placeholder="e.g. Zone 1" />
                 </div>
                 <div>
                   <FieldLabel htmlFor="pf-ec-name">Emergency Contact Name</FieldLabel>

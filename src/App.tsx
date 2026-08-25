@@ -271,7 +271,6 @@ const AuthenticatedApp: React.FC = () => {
   // Build initial profile from the logged-in user's signup data
   const initialProfile = currentUser ? {
     fullName: currentUser.fullName,
-    disabilityType: currentUser.disabilityType as any,
   } : undefined;
 
   return (
