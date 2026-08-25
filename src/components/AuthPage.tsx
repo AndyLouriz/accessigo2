@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { DisabilityType } from '../types';
 import {
   Eye, EyeOff, UserPlus, LogIn, Loader2, AlertCircle,
-  CheckCircle2, Accessibility, ShieldCheck,
+  CheckCircle2, ShieldCheck,
 } from 'lucide-react';
 
 type AuthTab = 'login' | 'signup';
 
-const DISABILITY_OPTIONS: { value: DisabilityType; label: string; emoji: string }[] = [
-  { value: 'wheelchair', label: 'Wheelchair User / Mobility Impaired', emoji: '♿' },
-  { value: 'mobility',   label: 'Physical / Mobility Impairment',      emoji: '🦽' },
-  { value: 'visual',     label: 'Visual Impairment / Blindness',       emoji: '🦯' },
-  { value: 'hearing',    label: 'Hearing Impairment / Deafness',       emoji: '👂' },
-  { value: 'cognitive',  label: 'Cognitive / Learning Difficulty',     emoji: '🧠' },
-  { value: 'senior',     label: 'Senior Citizen with Mobility Needs',  emoji: '🧓' },
-  { value: 'multiple',   label: 'Multiple Disabilities',               emoji: '⚕️' },
-  { value: 'caregiver',  label: 'Caregiver / Family Member',           emoji: '🤝' },
-];
+
 
 /* ── Accessible input wrapper ─────────────────────────────────────────────── */
 interface InputFieldProps {
@@ -106,7 +96,6 @@ export const AuthPage: React.FC = () => {
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [disability, setDisability] = useState<DisabilityType>('wheelchair');
 
   useEffect(() => {
     clearAuthError();
@@ -152,7 +141,7 @@ export const AuthPage: React.FC = () => {
     if (!validateSignup()) return;
     setIsSubmitting(true);
     clearAuthError();
-    const ok = await signup(name.trim(), email.trim(), password, disability);
+    const ok = await signup(name.trim(), email.trim(), password, 'wheelchair');
     setIsSubmitting(false);
     if (ok) setSuccessMsg(`Welcome, ${name.trim().split(' ')[0]}! Setting up your profile…`);
   };
@@ -312,23 +301,7 @@ export const AuthPage: React.FC = () => {
                     autoComplete="email"
                   />
 
-                  {/* Disability selector */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="signup-disability" className="flex text-sm font-bold text-slate-700 items-center gap-1.5">
-                      <Accessibility className="w-4 h-4 text-[#1E3A8A]" />
-                      Primary Disability / Role
-                    </label>
-                    <select
-                      id="signup-disability"
-                      value={disability}
-                      onChange={e => setDisability(e.target.value as DisabilityType)}
-                      className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 hover:border-slate-300 focus:border-[#1E3A8A] text-base font-medium text-slate-900 bg-white focus:outline-none transition-colors"
-                    >
-                      {DISABILITY_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.emoji} {o.label}</option>
-                      ))}
-                    </select>
-                  </div>
+
 
                   <InputField
                     id="signup-password"
