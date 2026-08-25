@@ -1,12 +1,6 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
-
-# Run and deploy your AI Studio app
+# AccessiGo
 
 This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/8e27b408-e3b3-4f26-8a17-14c23f5a1d0c
 
 ## Run Locally
 
